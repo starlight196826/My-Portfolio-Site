@@ -7,7 +7,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "db:seed": "tsx scripts/seed-supabase.ts"
+    "db:seed": "tsx scripts/seed-supabase.ts",
+    "db:export-sql": "tsx scripts/export-seed-sql.ts",
+    "db:verify": "tsx scripts/verify-supabase.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.103.0",

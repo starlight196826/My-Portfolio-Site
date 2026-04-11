@@ -63,9 +63,20 @@ export async function fetchPublicProfile(): Promise<Partial<Profile> | null> {
   const socialRaw = p.social_links;
   const socialLinks = Array.isArray(socialRaw) ? socialRaw : [];
 
+  const heroFromDb = (p as { hero_roles?: unknown }).hero_roles;
+  const heroRoles = Array.isArray(heroFromDb)
+    ? (heroFromDb as unknown[]).map((s) => String(s)).filter((s) => s.trim())
+    : [];
+
   return {
     name: String(p.full_name ?? ''),
     title: String(p.title ?? ''),
+    heroRoles:
+      heroRoles.length > 0
+        ? heroRoles
+        : String(p.title ?? '').trim()
+          ? [String(p.title)]
+          : [],
     bio: String(p.bio ?? ''),
     email: String(p.email ?? ''),
     location: String(p.location ?? ''),

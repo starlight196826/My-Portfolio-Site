@@ -163,8 +163,23 @@ async function seed() {
   }
   if (profErr) throw profErr;
 
+  const tables = [
+    'profile',
+    'work_experience',
+    'projects',
+    'articles',
+    'skills',
+    'testimonials',
+  ] as const;
+  console.log('Verifying row counts…');
+  for (const t of tables) {
+    const { count, error } = await supabase.from(t).select('*', { count: 'exact', head: true });
+    if (error) console.warn(`  ${t}: could not count (${error.message})`);
+    else console.log(`  ${t}: ${count ?? 0} rows`);
+  }
+
   console.log(
-    'Done. Seeded profile, work_experience, projects, articles, skills, testimonials.'
+    '\nDone. If the site still shows empty data, run supabase/migrations/20250411130000_portfolio_anon_access.sql in the SQL Editor, then npm run db:verify.'
   );
 }
 

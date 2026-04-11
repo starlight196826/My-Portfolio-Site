@@ -11,6 +11,12 @@ import {
   saveProfile,
   saveSkills,
   saveTestimonials,
+  fetchWorkExperiencesForAdmin,
+  fetchProjectsForAdmin,
+  fetchSkillsForAdmin,
+  fetchBlogPostsForAdmin,
+  fetchTestimonialsForAdmin,
+  fetchProfileForAdmin,
 } from '@/lib/portfolioService';
 
 const isSupabaseConfigured =
@@ -24,6 +30,14 @@ function warnSupabaseSync(context: string, err: unknown) {
       ? String((err as { message: unknown }).message)
       : String(err);
   console.warn(`[admin] ${context}:`, msg);
+}
+
+function AdminLoading() {
+  return (
+    <div className="flex min-h-[200px] items-center justify-center rounded-lg border border-dashed border-gray-300 bg-white dark:border-gray-600 dark:bg-gray-800">
+      <p className="text-sm text-gray-500 dark:text-gray-400">Loading from database…</p>
+    </div>
+  );
 }
 
 export default function AdminPage() {
@@ -206,8 +220,11 @@ export default function AdminPage() {
 // Work Experience Manager Component
 function ExperienceManager() {
   const [experiences, setExperiences] = useState([]);
-  const [editingId, setEditingId] = useState(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [showForm, setShowForm] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const loaded = useRef(false);
+  const skipNextPersist = useRef(false);
   const [formData, setFormData] = useState({
     company: '',
     role: '',
@@ -219,28 +236,37 @@ function ExperienceManager() {
   });
 
   useEffect(() => {
-    const saved = localStorage.getItem('portfolio_experiences');
-    if (saved) {
-      const parsed = JSON.parse(saved);
-      setExperiences(parsed.length > 0 ? parsed : emptyPortfolioData.workExperiences);
-    } else {
-      setExperiences(emptyPortfolioData.workExperiences);
-    }
-    loaded.current = true;
+    let cancelled = false;
+    (async () => {
+      try {
+        if (isSupabaseConfigured) {
+          const rows = await fetchWorkExperiencesForAdmin();
+          if (!cancelled) {
+            skipNextPersist.current = true;
+            setExperiences(rows);
+          }
+        } else {
+          const saved = localStorage.getItem('portfolio_experiences');
+          if (saved) {
+            const parsed = JSON.parse(saved);
+            setExperiences(parsed.length > 0 ? parsed : []);
+          } else {
+            setExperiences(emptyPortfolioData.workExperiences);
+          }
+        }
+      } finally {
+        if (!cancelled) {
+          loaded.current = true;
+          setIsLoading(false);
+        }
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
-  const handleSave = () => {
-    if (!formData.company || !formData.role) {
-      alert('Please fill in company and role');
-      return;
-    }
-
-    if (editingId) {
-      setExperiences(experiences.map(e => e.id === editingId ? { ...formData, id: editingId } : e));
-    } else {
-      setExperiences([...experiences, { ...formData, id: Date.now().toString() }]);
-    }
-
+  const resetForm = () => {
     setFormData({
       company: '',
       role: '',
@@ -251,25 +277,75 @@ function ExperienceManager() {
       current: false,
     });
     setEditingId(null);
+    setShowForm(false);
+  };
+
+  const handleSave = () => {
+    if (!formData.company || !formData.role) {
+      alert('Please fill in company and role');
+      return;
+    }
+
+    if (editingId) {
+      setExperiences(experiences.map((e: { id: string }) => (e.id === editingId ? { ...formData, id: editingId } : e)));
+    } else {
+      setExperiences([...experiences, { ...formData, id: Date.now().toString() }]);
+    }
+
+    resetForm();
   };
 
   useEffect(() => {
     if (!loaded.current) return;
+    if (skipNextPersist.current) {
+      skipNextPersist.current = false;
+      return;
+    }
     localStorage.setItem('portfolio_experiences', JSON.stringify(experiences));
     if (isSupabaseConfigured)
       saveExperiences(experiences).catch((e) => warnSupabaseSync('Sync work experience', e));
   }, [experiences]);
 
+  const formOpen = showForm || editingId !== null;
+
+  if (isLoading) return <AdminLoading />;
+
   return (
     <div className="space-y-6">
-      {/* Form */}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <p className="text-sm text-gray-500 dark:text-gray-400">
+          {experiences.length} experience{experiences.length !== 1 ? 's' : ''}
+        </p>
+        <button
+          type="button"
+          onClick={() => {
+            setEditingId(null);
+            setFormData({
+              company: '',
+              role: '',
+              startDate: '',
+              endDate: '',
+              description: '',
+              technologies: '',
+              current: false,
+            });
+            setShowForm(true);
+          }}
+          className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+        >
+          <Plus size={18} />
+          Add experience
+        </button>
+      </div>
+
+      {formOpen && (
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         className="rounded-lg bg-white p-6 shadow dark:bg-gray-800"
       >
         <h2 className="mb-4 text-xl font-bold text-gray-900 dark:text-white">
-          {editingId ? 'Edit Experience' : 'Add New Experience'}
+          {editingId ? 'Edit Experience' : 'New experience'}
         </h2>
 
         <div className="grid gap-4 md:grid-cols-2">
@@ -342,38 +418,25 @@ function ExperienceManager() {
 
         <div className="mt-4 flex gap-2">
           <button
+            type="button"
             onClick={handleSave}
             className="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 font-medium text-white hover:bg-blue-700"
           >
             <Save size={18} />
-            {editingId ? 'Update' : 'Add'} Experience
+            {editingId ? 'Update' : 'Save'} experience
           </button>
-          {editingId && (
-            <button
-              onClick={() => {
-                setEditingId(null);
-                setFormData({
-                  company: '',
-                  role: '',
-                  startDate: '',
-                  endDate: '',
-                  description: '',
-                  technologies: '',
-                  current: false,
-                });
-              }}
-              className="rounded-lg bg-gray-300 px-4 py-2 font-medium text-gray-900 hover:bg-gray-400 dark:bg-gray-700 dark:text-white"
-            >
-              Cancel
-            </button>
-          )}
+          <button
+            type="button"
+            onClick={resetForm}
+            className="rounded-lg bg-gray-200 px-4 py-2 font-medium text-gray-900 hover:bg-gray-300 dark:bg-gray-700 dark:text-white dark:hover:bg-gray-600"
+          >
+            Cancel
+          </button>
         </div>
       </motion.div>
+      )}
 
       {/* List */}
-      <div className="mb-3">
-        <p className="text-sm text-gray-500 dark:text-gray-400">{experiences.length} item{experiences.length !== 1 ? 's' : ''}</p>
-      </div>
       <div className="space-y-3">
         {experiences.map((exp: any) => (
           <motion.div
@@ -397,19 +460,22 @@ function ExperienceManager() {
               </div>
               <div className="flex gap-2 ml-4">
                 <button
+                  type="button"
                   onClick={() => {
                     setFormData({
                       ...exp,
                       technologies: Array.isArray(exp.technologies) ? exp.technologies.join(', ') : exp.technologies,
                     });
                     setEditingId(exp.id);
+                    setShowForm(true);
                   }}
                   className="rounded-lg bg-blue-100 px-3 py-1 text-sm font-medium text-blue-700 hover:bg-blue-200 dark:bg-blue-900/30 dark:text-blue-400"
                 >
                   Edit
                 </button>
                 <button
-                  onClick={() => setExperiences(experiences.filter(e => e.id !== exp.id))}
+                  type="button"
+                  onClick={() => setExperiences(experiences.filter((e: { id: string }) => e.id !== exp.id))}
                   className="rounded-lg bg-red-100 px-3 py-1 text-sm font-medium text-red-700 hover:bg-red-200 dark:bg-red-900/30 dark:text-red-400"
                 >
                   Delete
@@ -426,8 +492,11 @@ function ExperienceManager() {
 // Projects Manager Component
 function ProjectsManager() {
   const [projects, setProjects] = useState([]);
-  const [editingId, setEditingId] = useState(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [showForm, setShowForm] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const loaded = useRef(false);
+  const skipNextPersist = useRef(false);
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -441,15 +510,53 @@ function ProjectsManager() {
   });
 
   useEffect(() => {
-    const saved = localStorage.getItem('portfolio_projects');
-    if (saved) {
-      const parsed = JSON.parse(saved);
-      setProjects(parsed.length > 0 ? parsed : emptyPortfolioData.projects);
-    } else {
-      setProjects(emptyPortfolioData.projects);
-    }
-    loaded.current = true;
+    let cancelled = false;
+    (async () => {
+      try {
+        if (isSupabaseConfigured) {
+          const rows = await fetchProjectsForAdmin();
+          if (!cancelled) {
+            skipNextPersist.current = true;
+            setProjects(rows);
+          }
+        } else {
+          const saved = localStorage.getItem('portfolio_projects');
+          if (saved) {
+            const parsed = JSON.parse(saved);
+            setProjects(parsed.length > 0 ? parsed : []);
+          } else {
+            setProjects(emptyPortfolioData.projects);
+          }
+        }
+      } finally {
+        if (!cancelled) {
+          loaded.current = true;
+          setIsLoading(false);
+        }
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, []);
+
+  const emptyProjectForm = () => ({
+    title: '',
+    description: '',
+    excerpt: '',
+    tags: '',
+    category: '',
+    liveUrl: '',
+    githubUrl: '',
+    image: '',
+    featured: false,
+  });
+
+  const resetForm = () => {
+    setFormData(emptyProjectForm());
+    setEditingId(null);
+    setShowForm(false);
+  };
 
   const handleSave = () => {
     if (!formData.title || !formData.description) {
@@ -458,42 +565,59 @@ function ProjectsManager() {
     }
 
     if (editingId) {
-      setProjects(projects.map(p => p.id === editingId ? { ...formData, id: editingId } : p));
+      setProjects(
+        projects.map((p: { id: string }) => (p.id === editingId ? { ...formData, id: editingId } : p))
+      );
     } else {
       setProjects([...projects, { ...formData, id: Date.now().toString() }]);
     }
 
-    setFormData({
-      title: '',
-      description: '',
-      excerpt: '',
-      tags: '',
-      category: '',
-      liveUrl: '',
-      githubUrl: '',
-      image: '',
-      featured: false,
-    });
-    setEditingId(null);
+    resetForm();
   };
 
   useEffect(() => {
     if (!loaded.current) return;
+    if (skipNextPersist.current) {
+      skipNextPersist.current = false;
+      return;
+    }
     localStorage.setItem('portfolio_projects', JSON.stringify(projects));
     if (isSupabaseConfigured)
       saveProjects(projects).catch((e) => warnSupabaseSync('Sync projects', e));
   }, [projects]);
 
+  const formOpen = showForm || editingId !== null;
+
+  if (isLoading) return <AdminLoading />;
+
   return (
     <div className="space-y-6">
-      {/* Form */}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <p className="text-sm text-gray-500 dark:text-gray-400">
+          {projects.length} project{projects.length !== 1 ? 's' : ''}
+        </p>
+        <button
+          type="button"
+          onClick={() => {
+            setEditingId(null);
+            setFormData(emptyProjectForm());
+            setShowForm(true);
+          }}
+          className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+        >
+          <Plus size={18} />
+          Add project
+        </button>
+      </div>
+
+      {formOpen && (
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         className="rounded-lg bg-white p-6 shadow dark:bg-gray-800"
       >
         <h2 className="mb-4 text-xl font-bold text-gray-900 dark:text-white">
-          {editingId ? 'Edit Project' : 'Add New Project'}
+          {editingId ? 'Edit project' : 'New project'}
         </h2>
 
         <div className="grid gap-4 md:grid-cols-2">
@@ -565,40 +689,24 @@ function ProjectsManager() {
 
         <div className="mt-4 flex gap-2">
           <button
+            type="button"
             onClick={handleSave}
             className="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 font-medium text-white hover:bg-blue-700"
           >
             <Save size={18} />
-            {editingId ? 'Update' : 'Add'} Project
+            {editingId ? 'Update' : 'Save'} project
           </button>
-          {editingId && (
-            <button
-              onClick={() => {
-                setEditingId(null);
-                setFormData({
-                  title: '',
-                  description: '',
-                  excerpt: '',
-                  tags: '',
-                  category: '',
-                  liveUrl: '',
-                  githubUrl: '',
-                  image: '',
-                  featured: false,
-                });
-              }}
-              className="rounded-lg bg-gray-300 px-4 py-2 font-medium text-gray-900 hover:bg-gray-400 dark:bg-gray-700 dark:text-white"
-            >
-              Cancel
-            </button>
-          )}
+          <button
+            type="button"
+            onClick={resetForm}
+            className="rounded-lg bg-gray-200 px-4 py-2 font-medium text-gray-900 hover:bg-gray-300 dark:bg-gray-700 dark:text-white dark:hover:bg-gray-600"
+          >
+            Cancel
+          </button>
         </div>
       </motion.div>
+      )}
 
-      {/* List */}
-      <div className="mb-3">
-        <p className="text-sm text-gray-500 dark:text-gray-400">{projects.length} item{projects.length !== 1 ? 's' : ''}</p>
-      </div>
       <div className="space-y-3">
         {projects.map((proj: any) => (
           <motion.div
@@ -630,19 +738,22 @@ function ProjectsManager() {
               </div>
               <div className="flex gap-2 ml-4">
                 <button
+                  type="button"
                   onClick={() => {
                     setFormData({
                       ...proj,
                       tags: Array.isArray(proj.tags) ? proj.tags.join(', ') : proj.tags,
                     });
                     setEditingId(proj.id);
+                    setShowForm(true);
                   }}
                   className="rounded-lg bg-blue-100 px-3 py-1 text-sm font-medium text-blue-700 hover:bg-blue-200 dark:bg-blue-900/30 dark:text-blue-400"
                 >
                   Edit
                 </button>
                 <button
-                  onClick={() => setProjects(projects.filter(p => p.id !== proj.id))}
+                  type="button"
+                  onClick={() => setProjects(projects.filter((p: { id: string }) => p.id !== proj.id))}
                   className="rounded-lg bg-red-100 px-3 py-1 text-sm font-medium text-red-700 hover:bg-red-200 dark:bg-red-900/30 dark:text-red-400"
                 >
                   Delete
@@ -659,8 +770,11 @@ function ProjectsManager() {
 // Skills Manager Component
 function SkillsManager() {
   const [skills, setSkills] = useState([]);
-  const [editingId, setEditingId] = useState(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [showForm, setShowForm] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const loaded = useRef(false);
+  const skipNextPersist = useRef(false);
   const [formData, setFormData] = useState({
     name: '',
     category: 'Frontend',
@@ -668,15 +782,41 @@ function SkillsManager() {
   });
 
   useEffect(() => {
-    const saved = localStorage.getItem('portfolio_skills');
-    if (saved) {
-      const parsed = JSON.parse(saved);
-      setSkills(parsed.length > 0 ? parsed : emptyPortfolioData.skills);
-    } else {
-      setSkills(emptyPortfolioData.skills);
-    }
-    loaded.current = true;
+    let cancelled = false;
+    (async () => {
+      try {
+        if (isSupabaseConfigured) {
+          const rows = await fetchSkillsForAdmin();
+          if (!cancelled) {
+            skipNextPersist.current = true;
+            setSkills(rows);
+          }
+        } else {
+          const saved = localStorage.getItem('portfolio_skills');
+          if (saved) {
+            const parsed = JSON.parse(saved);
+            setSkills(parsed.length > 0 ? parsed : []);
+          } else {
+            setSkills(emptyPortfolioData.skills);
+          }
+        }
+      } finally {
+        if (!cancelled) {
+          loaded.current = true;
+          setIsLoading(false);
+        }
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, []);
+
+  const resetForm = () => {
+    setFormData({ name: '', category: 'Frontend', proficiency: 80 });
+    setEditingId(null);
+    setShowForm(false);
+  };
 
   const handleSave = () => {
     if (!formData.name) {
@@ -685,32 +825,59 @@ function SkillsManager() {
     }
 
     if (editingId) {
-      setSkills(skills.map(s => s.id === editingId ? { ...formData, id: editingId } : s));
+      setSkills(
+        skills.map((s: { id: string }) => (s.id === editingId ? { ...formData, id: editingId } : s))
+      );
     } else {
       setSkills([...skills, { ...formData, id: Date.now().toString() }]);
     }
 
-    setFormData({ name: '', category: 'Frontend', proficiency: 80 });
-    setEditingId(null);
+    resetForm();
   };
 
   useEffect(() => {
     if (!loaded.current) return;
+    if (skipNextPersist.current) {
+      skipNextPersist.current = false;
+      return;
+    }
     localStorage.setItem('portfolio_skills', JSON.stringify(skills));
     if (isSupabaseConfigured)
       saveSkills(skills).catch((e) => warnSupabaseSync('Sync skills', e));
   }, [skills]);
 
+  const formOpen = showForm || editingId !== null;
+
+  if (isLoading) return <AdminLoading />;
+
   return (
     <div className="space-y-6">
-      {/* Form */}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <p className="text-sm text-gray-500 dark:text-gray-400">
+          {skills.length} skill{skills.length !== 1 ? 's' : ''}
+        </p>
+        <button
+          type="button"
+          onClick={() => {
+            setEditingId(null);
+            setFormData({ name: '', category: 'Frontend', proficiency: 80 });
+            setShowForm(true);
+          }}
+          className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+        >
+          <Plus size={18} />
+          Add skill
+        </button>
+      </div>
+
+      {formOpen && (
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         className="rounded-lg bg-white p-6 shadow dark:bg-gray-800"
       >
         <h2 className="mb-4 text-xl font-bold text-gray-900 dark:text-white">
-          {editingId ? 'Edit Skill' : 'Add New Skill'}
+          {editingId ? 'Edit skill' : 'New skill'}
         </h2>
 
         <div className="grid gap-4 md:grid-cols-2">
@@ -747,30 +914,24 @@ function SkillsManager() {
 
         <div className="mt-4 flex gap-2">
           <button
+            type="button"
             onClick={handleSave}
             className="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 font-medium text-white hover:bg-blue-700"
           >
             <Save size={18} />
-            {editingId ? 'Update' : 'Add'} Skill
+            {editingId ? 'Update' : 'Save'} skill
           </button>
-          {editingId && (
-            <button
-              onClick={() => {
-                setEditingId(null);
-                setFormData({ name: '', category: 'Frontend', proficiency: 80 });
-              }}
-              className="rounded-lg bg-gray-300 px-4 py-2 font-medium text-gray-900 hover:bg-gray-400 dark:bg-gray-700 dark:text-white"
-            >
-              Cancel
-            </button>
-          )}
+          <button
+            type="button"
+            onClick={resetForm}
+            className="rounded-lg bg-gray-200 px-4 py-2 font-medium text-gray-900 hover:bg-gray-300 dark:bg-gray-700 dark:text-white dark:hover:bg-gray-600"
+          >
+            Cancel
+          </button>
         </div>
       </motion.div>
+      )}
 
-      {/* List by Category */}
-      <div className="mb-1">
-        <p className="text-sm text-gray-500 dark:text-gray-400">{skills.length} skill{skills.length !== 1 ? 's' : ''}</p>
-      </div>
       {['Frontend', 'Backend', 'Tools'].map((cat) => (
         <div key={cat}>
           <h3 className="mb-3 text-lg font-bold text-gray-900 dark:text-white">{cat} Skills</h3>
@@ -799,16 +960,21 @@ function SkillsManager() {
                     </div>
                     <div className="flex gap-2 ml-2">
                       <button
+                        type="button"
                         onClick={() => {
                           setFormData(skill);
                           setEditingId(skill.id);
+                          setShowForm(true);
                         }}
                         className="rounded-lg bg-blue-100 px-2 py-1 text-xs font-medium text-blue-700 hover:bg-blue-200 dark:bg-blue-900/30 dark:text-blue-400"
                       >
                         Edit
                       </button>
                       <button
-                        onClick={() => setSkills(skills.filter(s => s.id !== skill.id))}
+                        type="button"
+                        onClick={() =>
+                          setSkills(skills.filter((s: { id: string }) => s.id !== skill.id))
+                        }
                         className="rounded-lg bg-red-100 px-2 py-1 text-xs font-medium text-red-700 hover:bg-red-200 dark:bg-red-900/30 dark:text-red-400"
                       >
                         Delete
@@ -827,9 +993,13 @@ function SkillsManager() {
 // Articles Manager Component
 function ArticlesManager() {
   const [articles, setArticles] = useState([]);
-  const [editingId, setEditingId] = useState(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [showForm, setShowForm] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const loaded = useRef(false);
+  const skipNextPersist = useRef(false);
   const [formData, setFormData] = useState({
+    slug: '',
     title: '',
     excerpt: '',
     category: '',
@@ -841,15 +1011,53 @@ function ArticlesManager() {
   });
 
   useEffect(() => {
-    const saved = localStorage.getItem('portfolio_articles');
-    if (saved) {
-      const parsed = JSON.parse(saved);
-      setArticles(parsed.length > 0 ? parsed : emptyPortfolioData.blogPosts);
-    } else {
-      setArticles(emptyPortfolioData.blogPosts);
-    }
-    loaded.current = true;
+    let cancelled = false;
+    (async () => {
+      try {
+        if (isSupabaseConfigured) {
+          const rows = await fetchBlogPostsForAdmin();
+          if (!cancelled) {
+            skipNextPersist.current = true;
+            setArticles(rows);
+          }
+        } else {
+          const saved = localStorage.getItem('portfolio_articles');
+          if (saved) {
+            const parsed = JSON.parse(saved);
+            setArticles(parsed.length > 0 ? parsed : []);
+          } else {
+            setArticles(emptyPortfolioData.blogPosts);
+          }
+        }
+      } finally {
+        if (!cancelled) {
+          loaded.current = true;
+          setIsLoading(false);
+        }
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, []);
+
+  const emptyArticleForm = () => ({
+    slug: '',
+    title: '',
+    excerpt: '',
+    category: '',
+    tags: '',
+    publishedAt: new Date().toISOString().split('T')[0],
+    readTime: 5,
+    coverImage: '',
+    content: '',
+  });
+
+  const resetForm = () => {
+    setFormData(emptyArticleForm());
+    setEditingId(null);
+    setShowForm(false);
+  };
 
   const handleSave = () => {
     if (!formData.title || !formData.content) {
@@ -858,44 +1066,86 @@ function ArticlesManager() {
     }
 
     if (editingId) {
-      setArticles(articles.map(a => a.id === editingId ? { ...formData, id: editingId } : a));
+      setArticles(
+        articles.map((a: { id: string; slug?: string }) => {
+          if (a.id !== editingId) return a;
+          const slug =
+            formData.slug?.trim() ||
+            a.slug ||
+            formData.title
+              .toLowerCase()
+              .replace(/\s+/g, '-')
+              .replace(/[^a-z0-9-]/g, '');
+          return { ...formData, id: editingId, slug };
+        })
+      );
     } else {
-      setArticles([...articles, { ...formData, id: Date.now().toString(), slug: formData.title.toLowerCase().replace(/\s+/g, '-') }]);
+      const slug =
+        formData.title
+          .toLowerCase()
+          .replace(/\s+/g, '-')
+          .replace(/[^a-z0-9-]/g, '') || `post-${Date.now()}`;
+      setArticles([...articles, { ...formData, id: Date.now().toString(), slug }]);
     }
 
-    setFormData({
-      title: '',
-      excerpt: '',
-      category: '',
-      tags: '',
-      publishedAt: new Date().toISOString().split('T')[0],
-      readTime: 5,
-      coverImage: '',
-      content: '',
-    });
-    setEditingId(null);
+    resetForm();
   };
 
   useEffect(() => {
     if (!loaded.current) return;
+    if (skipNextPersist.current) {
+      skipNextPersist.current = false;
+      return;
+    }
     localStorage.setItem('portfolio_articles', JSON.stringify(articles));
     if (isSupabaseConfigured)
       saveBlogPosts(articles).catch((e) => warnSupabaseSync('Sync articles', e));
   }, [articles]);
 
+  const formOpen = showForm || editingId !== null;
+
+  if (isLoading) return <AdminLoading />;
+
   return (
     <div className="space-y-6">
-      {/* Form */}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <p className="text-sm text-gray-500 dark:text-gray-400">
+          {articles.length} article{articles.length !== 1 ? 's' : ''}
+        </p>
+        <button
+          type="button"
+          onClick={() => {
+            setEditingId(null);
+            setFormData(emptyArticleForm());
+            setShowForm(true);
+          }}
+          className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+        >
+          <Plus size={18} />
+          Add article
+        </button>
+      </div>
+
+      {formOpen && (
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         className="rounded-lg bg-white p-6 shadow dark:bg-gray-800"
       >
         <h2 className="mb-4 text-xl font-bold text-gray-900 dark:text-white">
-          {editingId ? 'Edit Article' : 'Add New Article'}
+          {editingId ? 'Edit article' : 'New article'}
         </h2>
 
         <div className="grid gap-4">
+          {editingId ? (
+            <input
+              type="text"
+              readOnly
+              title="URL slug"
+              value={formData.slug}
+              className="rounded-lg border border-gray-200 bg-gray-50 px-4 py-2 text-sm dark:border-gray-600 dark:bg-gray-900 dark:text-gray-400"
+            />
+          ) : null}
           <input
             type="text"
             placeholder="Article Title"
@@ -957,39 +1207,24 @@ function ArticlesManager() {
 
         <div className="mt-4 flex gap-2">
           <button
+            type="button"
             onClick={handleSave}
             className="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 font-medium text-white hover:bg-blue-700"
           >
             <Save size={18} />
-            {editingId ? 'Update' : 'Add'} Article
+            {editingId ? 'Update' : 'Save'} article
           </button>
-          {editingId && (
-            <button
-              onClick={() => {
-                setEditingId(null);
-                setFormData({
-                  title: '',
-                  excerpt: '',
-                  category: '',
-                  tags: '',
-                  publishedAt: new Date().toISOString().split('T')[0],
-                  readTime: 5,
-                  coverImage: '',
-                  content: '',
-                });
-              }}
-              className="rounded-lg bg-gray-300 px-4 py-2 font-medium text-gray-900 hover:bg-gray-400 dark:bg-gray-700 dark:text-white"
-            >
-              Cancel
-            </button>
-          )}
+          <button
+            type="button"
+            onClick={resetForm}
+            className="rounded-lg bg-gray-200 px-4 py-2 font-medium text-gray-900 hover:bg-gray-300 dark:bg-gray-700 dark:text-white dark:hover:bg-gray-600"
+          >
+            Cancel
+          </button>
         </div>
       </motion.div>
+      )}
 
-      {/* List */}
-      <div className="mb-3">
-        <p className="text-sm text-gray-500 dark:text-gray-400">{articles.length} article{articles.length !== 1 ? 's' : ''}</p>
-      </div>
       <div className="space-y-3">
         {articles.map((article: any) => (
           <motion.div
@@ -1013,19 +1248,29 @@ function ArticlesManager() {
               </div>
               <div className="flex gap-2 ml-4">
                 <button
+                  type="button"
                   onClick={() => {
                     setFormData({
-                      ...article,
+                      slug: article.slug ?? '',
+                      title: article.title,
+                      excerpt: article.excerpt,
+                      category: article.category,
                       tags: Array.isArray(article.tags) ? article.tags.join(', ') : article.tags,
+                      publishedAt: article.publishedAt || new Date().toISOString().split('T')[0],
+                      readTime: article.readTime,
+                      coverImage: article.coverImage,
+                      content: article.content,
                     });
                     setEditingId(article.id);
+                    setShowForm(true);
                   }}
                   className="rounded-lg bg-blue-100 px-3 py-1 text-sm font-medium text-blue-700 hover:bg-blue-200 dark:bg-blue-900/30 dark:text-blue-400"
                 >
                   Edit
                 </button>
                 <button
-                  onClick={() => setArticles(articles.filter(a => a.id !== article.id))}
+                  type="button"
+                  onClick={() => setArticles(articles.filter((a: { id: string }) => a.id !== article.id))}
                   className="rounded-lg bg-red-100 px-3 py-1 text-sm font-medium text-red-700 hover:bg-red-200 dark:bg-red-900/30 dark:text-red-400"
                 >
                   Delete
@@ -1042,8 +1287,11 @@ function ArticlesManager() {
 // Testimonials Manager Component
 function TestimonialsManager() {
   const [testimonials, setTestimonials] = useState([]);
-  const [editingId, setEditingId] = useState(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [showForm, setShowForm] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const loaded = useRef(false);
+  const skipNextPersist = useRef(false);
   const [formData, setFormData] = useState({
     name: '',
     role: '',
@@ -1053,14 +1301,36 @@ function TestimonialsManager() {
   });
 
   useEffect(() => {
-    const saved = localStorage.getItem('portfolio_testimonials');
-    if (saved) {
-      setTestimonials(JSON.parse(saved));
-    } else {
-      setTestimonials([]);
-    }
-    loaded.current = true;
+    let cancelled = false;
+    (async () => {
+      try {
+        if (isSupabaseConfigured) {
+          const rows = await fetchTestimonialsForAdmin();
+          if (!cancelled) {
+            skipNextPersist.current = true;
+            setTestimonials(rows);
+          }
+        } else {
+          const saved = localStorage.getItem('portfolio_testimonials');
+          setTestimonials(saved ? JSON.parse(saved) : []);
+        }
+      } finally {
+        if (!cancelled) {
+          loaded.current = true;
+          setIsLoading(false);
+        }
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, []);
+
+  const resetForm = () => {
+    setFormData({ name: '', role: '', company: '', quote: '', avatar: '' });
+    setEditingId(null);
+    setShowForm(false);
+  };
 
   const handleSave = () => {
     if (!formData.name || !formData.quote) {
@@ -1069,32 +1339,61 @@ function TestimonialsManager() {
     }
 
     if (editingId) {
-      setTestimonials(testimonials.map(t => t.id === editingId ? { ...formData, id: editingId } : t));
+      setTestimonials(
+        testimonials.map((t: { id: string }) =>
+          t.id === editingId ? { ...formData, id: editingId } : t
+        )
+      );
     } else {
       setTestimonials([...testimonials, { ...formData, id: Date.now().toString() }]);
     }
 
-    setFormData({ name: '', role: '', company: '', quote: '', avatar: '' });
-    setEditingId(null);
+    resetForm();
   };
 
   useEffect(() => {
     if (!loaded.current) return;
+    if (skipNextPersist.current) {
+      skipNextPersist.current = false;
+      return;
+    }
     localStorage.setItem('portfolio_testimonials', JSON.stringify(testimonials));
     if (isSupabaseConfigured)
       saveTestimonials(testimonials).catch((e) => warnSupabaseSync('Sync testimonials', e));
   }, [testimonials]);
 
+  const formOpen = showForm || editingId !== null;
+
+  if (isLoading) return <AdminLoading />;
+
   return (
     <div className="space-y-6">
-      {/* Form */}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <p className="text-sm text-gray-500 dark:text-gray-400">
+          {testimonials.length} testimonial{testimonials.length !== 1 ? 's' : ''}
+        </p>
+        <button
+          type="button"
+          onClick={() => {
+            setEditingId(null);
+            setFormData({ name: '', role: '', company: '', quote: '', avatar: '' });
+            setShowForm(true);
+          }}
+          className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+        >
+          <Plus size={18} />
+          Add testimonial
+        </button>
+      </div>
+
+      {formOpen && (
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         className="rounded-lg bg-white p-6 shadow dark:bg-gray-800"
       >
         <h2 className="mb-4 text-xl font-bold text-gray-900 dark:text-white">
-          {editingId ? 'Edit Testimonial' : 'Add New Testimonial'}
+          {editingId ? 'Edit testimonial' : 'New testimonial'}
         </h2>
 
         <div className="grid gap-4 md:grid-cols-2">
@@ -1137,27 +1436,24 @@ function TestimonialsManager() {
 
         <div className="mt-4 flex gap-2">
           <button
+            type="button"
             onClick={handleSave}
             className="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 font-medium text-white hover:bg-blue-700"
           >
             <Save size={18} />
-            {editingId ? 'Update' : 'Add'} Testimonial
+            {editingId ? 'Update' : 'Save'} testimonial
           </button>
-          {editingId && (
-            <button
-              onClick={() => {
-                setEditingId(null);
-                setFormData({ name: '', role: '', company: '', quote: '', avatar: '' });
-              }}
-              className="rounded-lg bg-gray-300 px-4 py-2 font-medium text-gray-900 hover:bg-gray-400 dark:bg-gray-700 dark:text-white"
-            >
-              Cancel
-            </button>
-          )}
+          <button
+            type="button"
+            onClick={resetForm}
+            className="rounded-lg bg-gray-200 px-4 py-2 font-medium text-gray-900 hover:bg-gray-300 dark:bg-gray-700 dark:text-white dark:hover:bg-gray-600"
+          >
+            Cancel
+          </button>
         </div>
       </motion.div>
+      )}
 
-      {/* List */}
       <div className="space-y-3">
         {testimonials.map((testimonial: any) => (
           <motion.div
@@ -1169,7 +1465,7 @@ function TestimonialsManager() {
             <div className="flex items-start justify-between">
               <div className="flex-1">
                 <blockquote className="italic text-gray-700 dark:text-gray-300">
-                  "{testimonial.quote}"
+                  &ldquo;{testimonial.quote}&rdquo;
                 </blockquote>
                 <div className="mt-3">
                   <p className="font-bold text-gray-900 dark:text-white">{testimonial.name}</p>
@@ -1180,16 +1476,23 @@ function TestimonialsManager() {
               </div>
               <div className="flex gap-2 ml-4">
                 <button
+                  type="button"
                   onClick={() => {
                     setFormData(testimonial);
                     setEditingId(testimonial.id);
+                    setShowForm(true);
                   }}
                   className="rounded-lg bg-blue-100 px-3 py-1 text-sm font-medium text-blue-700 hover:bg-blue-200 dark:bg-blue-900/30 dark:text-blue-400"
                 >
                   Edit
                 </button>
                 <button
-                  onClick={() => setTestimonials(testimonials.filter(t => t.id !== testimonial.id))}
+                  type="button"
+                  onClick={() =>
+                    setTestimonials(
+                      testimonials.filter((t: { id: string }) => t.id !== testimonial.id)
+                    )
+                  }
                   className="rounded-lg bg-red-100 px-3 py-1 text-sm font-medium text-red-700 hover:bg-red-200 dark:bg-red-900/30 dark:text-red-400"
                 >
                   Delete
@@ -1222,29 +1525,69 @@ function ProfileManager() {
     technologiesLearned: p.technologiesLearned,
   });
   const [photoMode, setPhotoMode] = useState<'upload' | 'url'>('upload');
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const saved = localStorage.getItem('portfolio_profile');
-    if (!saved) return;
-    try {
-      const parsed = JSON.parse(saved) as Record<string, unknown>;
-      setProfile((prev) => {
-        const next = { ...prev, ...parsed } as typeof prev;
-        let roles = Array.isArray(parsed.heroRoles)
-          ? (parsed.heroRoles as string[]).map((s) => String(s))
-          : [];
-        if (!roles.length && typeof parsed.title === 'string' && parsed.title.trim()) {
-          roles = [parsed.title.trim()];
+    let cancelled = false;
+    (async () => {
+      try {
+        if (isSupabaseConfigured) {
+          const row = await fetchProfileForAdmin();
+          if (cancelled || !row) return;
+          let roles = row.heroRoles?.length
+            ? row.heroRoles.map((s) => String(s).trim()).filter(Boolean)
+            : row.title?.trim()
+              ? [row.title.trim()]
+              : [];
+          if (!roles.length) roles = [''];
+          setProfile({
+            name: row.name ?? '',
+            title: roles[0] ?? '',
+            heroRoles: roles,
+            email: row.email ?? '',
+            location: row.location ?? '',
+            bio: row.bio ?? '',
+            profileImage: row.profileImage ?? '',
+            resumeUrl: row.resumeUrl ?? '',
+            socialLinks:
+              Array.isArray(row.socialLinks) && row.socialLinks.length > 0
+                ? row.socialLinks
+                : p.socialLinks,
+            yearsOfExperience: row.yearsOfExperience ?? 0,
+            projectsCompleted: row.projectsCompleted ?? 0,
+            companiesWorked: row.companiesWorked ?? 0,
+            technologiesLearned: row.technologiesLearned ?? 0,
+          });
+        } else {
+          const saved = localStorage.getItem('portfolio_profile');
+          if (!saved) return;
+          try {
+            const parsed = JSON.parse(saved) as Record<string, unknown>;
+            setProfile((prev) => {
+              const next = { ...prev, ...parsed } as typeof prev;
+              let roles = Array.isArray(parsed.heroRoles)
+                ? (parsed.heroRoles as string[]).map((s) => String(s))
+                : [];
+              if (!roles.length && typeof parsed.title === 'string' && parsed.title.trim()) {
+                roles = [parsed.title.trim()];
+              }
+              if (!roles.length) roles = [''];
+              const trimmed = roles.map((r) => r.trim()).filter(Boolean);
+              next.heroRoles = trimmed.length ? trimmed : [''];
+              next.title = next.heroRoles[0] ?? '';
+              return next;
+            });
+          } catch {
+            console.error('Invalid portfolio_profile in localStorage');
+          }
         }
-        if (!roles.length) roles = [''];
-        const trimmed = roles.map((r) => r.trim()).filter(Boolean);
-        next.heroRoles = trimmed.length ? trimmed : [''];
-        next.title = next.heroRoles[0] ?? '';
-        return next;
-      });
-    } catch {
-      console.error('Invalid portfolio_profile in localStorage');
-    }
+      } finally {
+        if (!cancelled) setIsLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const handleSave = async () => {
@@ -1276,6 +1619,8 @@ function ProfileManager() {
 
   const currentPhoto = profile.profileImage || '';
 
+  if (isLoading) return <AdminLoading />;
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -1283,6 +1628,11 @@ function ProfileManager() {
       className="max-w-2xl rounded-lg bg-white p-6 shadow dark:bg-gray-800"
     >
       <h2 className="mb-6 text-2xl font-bold text-gray-900 dark:text-white">Profile Settings</h2>
+      <p className="mb-4 text-xs text-gray-500 dark:text-gray-400">
+        {isSupabaseConfigured
+          ? 'Loaded from Supabase. Save writes to your database and this browser.'
+          : 'Configure Supabase URL in .env to load profile from the database.'}
+      </p>
 
       <div className="space-y-4">
         {/* Photo */}
