@@ -1,0 +1,79 @@
+THONG XUAN ANH TRINH
+Full Stack Developer & Creative Technologist
+starlight196826@gmail.com | Ban Tang Village, Nghe An Province, Vietnam
+
+PROFESSIONAL SUMMARY
+Passionate full-stack developer with 6+ years of experience building scalable web applications.
+Specialized in creating seamless digital experiences using cutting-edge technologies including
+React, Next.js, TypeScript, Node.js, and cloud platforms. Known for problem-solving abilities,
+attention to detail, and delivering high-quality code.
+
+TECHNICAL SKILLS
+Frontend: React, Next.js, TypeScript, Tailwind CSS, Framer Motion, Redux, React Hook Form
+Backend: Node.js, Express, Python, Django, PostgreSQL, MongoDB, REST APIs
+DevOps & Tools: Git, Docker, AWS, Vercel, Netlify, VS Code, CI/CD
+Specializations: Full-Stack Development, Web Performance Optimization, UI/UX Implementation
+
+PROFESSIONAL EXPERIENCE
+
+Senior Full Stack Developer
+TechCore Solutions | Jan 2023 - Present
+- Led development of 5+ production applications using React and Next.js
+- Implemented performance optimizations reducing page load time by 40%
+- Mentored junior developers and established best practices for TypeScript usage
+- Architected scalable microservices using Node.js and Docker
+
+Full Stack Developer
+Digital Innovations Ltd | Jun 2021 - Dec 2022
+- Developed 8 full-stack web applications serving 50K+ monthly users
+- Built responsive UI components with React and Tailwind CSS
+- Implemented RESTful APIs with Node.js and Express
+- Optimized database queries improving application performance by 35%
+
+Frontend Developer
+WebFlow Creative | Mar 2020 - May 2021
+- Created interactive user interfaces with React and modern JavaScript
+- Implemented state management solutions using Redux
+- Collaborated with design team to translate Figma designs to pixel-perfect code
+- Improved code coverage to 85% through comprehensive testing
+
+Junior Developer
+StartupHub | Jan 2019 - Feb 2020
+- Assisted in building responsive websites with HTML5, CSS3, and JavaScript
+- Contributed to documentation and code reviews
+- Learned and implemented modern web development practices
+
+FEATURED PROJECTS
+
+E-commerce Platform (React, Node.js, MongoDB)
+- Built full-stack e-commerce solution with payment integration
+- Implemented real-time inventory management
+- Result: 10K+ transactions processed successfully
+
+Project Management Tool (Next.js, PostgreSQL, WebSockets)
+- Developed collaborative project management application
+- Real-time updates using WebSockets
+- Result: Adopted by 500+ teams
+
+Data Analytics Dashboard (React, D3.js, API Integration)
+- Created interactive dashboard for data visualization
+- Integrated multiple APIs for real-time data
+- Result: 40% improvement in data analysis efficiency
+
+EDUCATION
+Bachelor of Science in Computer Science
+National University of Vietnam | 2018
+
+CERTIFICATIONS & AWARDS
+- Full Stack Web Developer Certification
+- AWS Certified Solutions Architect Associate
+- Outstanding Technical Contributor Award (2023)
+- Speaker at React Vietnam Meetup (2023)
+
+LANGUAGES
+- Vietnamese (Native)
+- English (Fluent)
+- French (Basic)
+
+INTERESTS
+Open Source Contribution, Tech Blogging, Mentoring Developers, UI/UX Design

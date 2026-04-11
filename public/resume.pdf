@@ -1,0 +1,320 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [3 0 R] /Count 1 >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /Resources 4 0 R /MediaBox [0 0 612 792] /Contents 5 0 R >>
+endobj
+4 0 obj
+<< /Font << /F1 6 0 R /F2 7 0 R /F3 8 0 R >> >>
+endobj
+5 0 obj
+<< /Length 4200 >>
+stream
+BT
+/F1 28 Tf
+50 720 Td
+(Thong Xuan Anh Trinh) Tj
+ET
+
+BT
+/F2 12 Tf
+50 700 Td
+(Full Stack Developer & Creative Technologist) Tj
+ET
+
+BT
+/F3 10 Tf
+50 680 Td
+(starlight196826@gmail.com | Vietnam) Tj
+ET
+
+0.14 0.24 0.82 RG
+50 670 512 2 re
+S
+
+BT
+/F1 14 Tf
+50 650 Td
+(PROFESSIONAL SUMMARY) Tj
+ET
+
+BT
+/F2 11 Tf
+50 635 Td
+(Passionate full stack developer with 6+ years of experience building scalable web) Tj
+ET
+
+BT
+/F2 11 Tf
+50 623 Td
+(applications. Specialized in React, Node.js, and cloud technologies. Strong track record) Tj
+ET
+
+BT
+/F2 11 Tf
+50 611 Td
+(of delivering high-performance solutions for enterprise clients.) Tj
+ET
+
+BT
+/F1 14 Tf
+50 590 Td
+(TECHNICAL SKILLS) Tj
+ET
+
+BT
+/F2 11 Tf
+50 575 Td
+(Frontend: React, Next.js, TypeScript, Tailwind CSS, Vue.js, GSAP, Framer Motion) Tj
+ET
+
+BT
+/F2 11 Tf
+50 563 Td
+(Backend: Node.js, Express.js, PostgreSQL, MongoDB, GraphQL, Firebase) Tj
+ET
+
+BT
+/F2 11 Tf
+50 551 Td
+(DevOps & Tools: Docker, Kubernetes, AWS, Git, CI/CD, Linux, Webpack) Tj
+ET
+
+BT
+/F1 14 Tf
+50 530 Td
+(PROFESSIONAL EXPERIENCE) Tj
+ET
+
+BT
+/F2 12 Tf
+50 515 Td
+(Senior Full Stack Developer - TechCore Solutions) Tj
+ET
+
+BT
+/F3 10 Tf
+50 503 Td
+(Jan 2023 - Present) Tj
+ET
+
+BT
+/F2 11 Tf
+50 488 Td
+(• Led development team building scalable SaaS products serving 100K+ daily users) Tj
+ET
+
+BT
+/F2 11 Tf
+50 476 Td
+(• Architected microservices infrastructure improving system performance by 40%) Tj
+ET
+
+BT
+/F2 11 Tf
+50 464 Td
+(• Implemented CI/CD pipelines reducing deployment time from 45min to 18min) Tj
+ET
+
+BT
+/F2 11 Tf
+50 452 Td
+(• Technologies: TypeScript, React, Node.js, PostgreSQL, AWS, Docker) Tj
+ET
+
+BT
+/F2 12 Tf
+50 437 Td
+(Full Stack Developer - Digital Innovations Inc) Tj
+ET
+
+BT
+/F3 10 Tf
+50 425 Td
+(Jun 2021 - Dec 2022) Tj
+ET
+
+BT
+/F2 11 Tf
+50 410 Td
+(• Developed and maintained 15+ web applications for enterprise clients) Tj
+ET
+
+BT
+/F2 11 Tf
+50 398 Td
+(• Optimized database queries improving application performance by 45%) Tj
+ET
+
+BT
+/F2 11 Tf
+50 386 Td
+(• Mentored 3 junior developers on modern web development practices) Tj
+ET
+
+BT
+/F2 11 Tf
+50 374 Td
+(• Technologies: React, Node.js, MongoDB, GraphQL, Redis, Kubernetes) Tj
+ET
+
+BT
+/F2 12 Tf
+50 359 Td
+(Frontend Developer - Creative Studio Agency) Tj
+ET
+
+BT
+/F3 10 Tf
+50 347 Td
+(Mar 2020 - May 2021) Tj
+ET
+
+BT
+/F2 11 Tf
+50 332 Td
+(• Built responsive web interfaces for 20+ client projects) Tj
+ET
+
+BT
+/F2 11 Tf
+50 320 Td
+(• Implemented complex animations and interactive features using modern CSS) Tj
+ET
+
+BT
+/F2 11 Tf
+50 308 Td
+(• Maintained 98% uptime across production sites) Tj
+ET
+
+BT
+/F1 14 Tf
+50 290 Td
+(FEATURED PROJECTS) Tj
+ET
+
+BT
+/F2 12 Tf
+50 275 Td
+(1. E-Commerce Platform) Tj
+ET
+
+BT
+/F2 11 Tf
+50 261 Td
+(Built full-stack marketplace supporting 50K+ products and 100K+ monthly users) Tj
+ET
+
+BT
+/F2 11 Tf
+50 249 Td
+(Tech: Next.js, Node.js, PostgreSQL, Stripe API, AWS S3) Tj
+ET
+
+BT
+/F2 12 Tf
+50 234 Td
+(2. Project Management Dashboard) Tj
+ET
+
+BT
+/F2 11 Tf
+50 220 Td
+(Real-time collaboration tool with WebSocket integration for 500+ concurrent users) Tj
+ET
+
+BT
+/F2 11 Tf
+50 208 Td
+(Tech: React, Firebase, WebSockets, Tailwind CSS) Tj
+ET
+
+BT
+/F2 12 Tf
+50 193 Td
+(3. Analytics Platform) Tj
+ET
+
+BT
+/F2 11 Tf
+50 179 Td
+(Data visualization dashboard processing 1M+ daily events with real-time updates) Tj
+ET
+
+BT
+/F2 11 Tf
+50 167 Td
+(Tech: React, Node.js, MongoDB, Chart.js, AWS) Tj
+ET
+
+BT
+/F1 14 Tf
+50 149 Td
+(EDUCATION & CERTIFICATIONS) Tj
+ET
+
+BT
+/F2 11 Tf
+50 134 Td
+(• AWS Certified Solutions Architect - Associate) Tj
+ET
+
+BT
+/F2 11 Tf
+50 122 Td
+(• Google Cloud Associate Cloud Engineer) Tj
+ET
+
+BT
+/F2 11 Tf
+50 110 Td
+(• React Advanced Patterns Certification) Tj
+ET
+
+BT
+/F2 11 Tf
+50 98 Td
+(• Bachelor of Science in Computer Science) Tj
+ET
+
+BT
+/F3 10 Tf
+50 83 Td
+(This resume was created on April 7, 2026. For the latest version, visit: starlight196826@gmail.com) Tj
+ET
+
+0.14 0.24 0.82 RG
+50 75 512 1 re
+S
+endstream
+endobj
+6 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>
+endobj
+7 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+8 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Oblique >>
+endobj
+xref
+0 9
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000115 00000 n 
+0000000217 00000 n 
+0000000290 00000 n 
+0000004542 00000 n 
+0000004627 00000 n 
+0000004704 00000 n 
+trailer
+<< /Size 9 /Root 1 0 R >>
+startxref
+4784
+%%EOF
