@@ -125,29 +125,42 @@ async function seed() {
   if (teErr) throw teErr;
 
   console.log('Upserting profile…');
-  const { error: profErr } = await supabase.from('profile').upsert(
-    {
-      id: 1,
-      full_name: profile.name,
-      bio: profile.bio,
-      email: profile.email,
-      location: profile.location,
-      years_of_experience: profile.yearsOfExperience,
-      projects_completed: profile.projectsCompleted,
-      companies_worked: profile.companiesWorked,
-      technologies_learned: profile.technologiesLearned,
-      title: profile.title,
-      hero_roles: profile.heroRoles?.length
-        ? profile.heroRoles
-        : profile.title
-          ? [profile.title]
-          : [],
-      profile_image_url: profile.profileImage,
-      resume_url: profile.resumeUrl,
-      social_links: profile.socialLinks,
-    },
-    { onConflict: 'id' }
-  );
+  const heroRoles =
+    profile.heroRoles?.length
+      ? profile.heroRoles
+      : profile.title
+        ? [profile.title]
+        : [];
+  const profileRow = {
+    id: 1,
+    full_name: profile.name,
+    bio: profile.bio,
+    email: profile.email,
+    location: profile.location,
+    years_of_experience: profile.yearsOfExperience,
+    projects_completed: profile.projectsCompleted,
+    companies_worked: profile.companiesWorked,
+    technologies_learned: profile.technologiesLearned,
+    title: profile.title,
+    hero_roles: heroRoles,
+    profile_image_url: profile.profileImage,
+    resume_url: profile.resumeUrl,
+    social_links: profile.socialLinks,
+  };
+
+  let profErr = (await supabase.from('profile').upsert(profileRow, { onConflict: 'id' }))
+    .error;
+  if (
+    profErr &&
+    (profErr.message?.includes('hero_roles') || profErr.code === 'PGRST204')
+  ) {
+    console.warn(
+      '[seed] profile.hero_roles missing in DB — run supabase/migrations/20250410200000_profile_hero_roles.sql in SQL Editor, then re-seed. Upserting profile without hero_roles.'
+    );
+    const { hero_roles: _h, ...withoutHero } = profileRow;
+    profErr = (await supabase.from('profile').upsert(withoutHero, { onConflict: 'id' }))
+      .error;
+  }
   if (profErr) throw profErr;
 
   console.log(
