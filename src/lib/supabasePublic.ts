@@ -45,10 +45,15 @@ export async function fetchArticlesByCategory(
 }
 
 export async function fetchAllArticleSlugs(): Promise<string[]> {
-  const { data } = await supabase.from('articles').select('slug');
-  return (data ?? [])
-    .map((r: { slug: string }) => r.slug)
-    .filter((s): s is string => Boolean(s));
+  try {
+    const { data, error } = await supabase.from('articles').select('slug');
+    if (error || !data?.length) return [];
+    return (data as { slug: string }[])
+      .map((r) => r.slug)
+      .filter((s): s is string => Boolean(s));
+  } catch {
+    return [];
+  }
 }
 
 export async function fetchPublicProfile(): Promise<Partial<Profile> | null> {
