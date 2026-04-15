@@ -177,7 +177,7 @@ export default function AdminPage() {
 
   if (!authenticated) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-blue-50 to-purple-50 dark:from-gray-950 dark:to-gray-900">
+      <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-sky-50 to-teal-50 dark:from-navy dark:to-navy-muted">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -197,7 +197,7 @@ export default function AdminPage() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Enter admin password"
-                  className="w-full rounded-lg border border-gray-300 px-4 py-2 text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+                  className="w-full rounded-lg border border-gray-300 px-4 py-2 text-gray-900 focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-200 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
                 />
                 <button
                   type="button"
@@ -212,7 +212,7 @@ export default function AdminPage() {
 
             <button
               type="submit"
-              className="w-full rounded-lg bg-blue-600 px-4 py-2 font-medium text-white transition-all hover:bg-blue-700 active:scale-95"
+              className="w-full rounded-lg bg-teal-600 px-4 py-2 font-medium text-white transition-all hover:bg-teal-700 active:scale-95"
             >
               Login to Admin Panel
             </button>
@@ -229,7 +229,7 @@ export default function AdminPage() {
   }
 
   return (
-    <div className="flex min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="flex min-h-screen bg-sky-50 dark:bg-navy">
       {/* Sidebar Overlay - Mobile */}
       {sidebarOpen && (
         <div
@@ -266,7 +266,7 @@ export default function AdminPage() {
                 }}
                 className={`w-full rounded-lg px-4 py-2 text-left text-sm font-medium transition-all ${
                   activeSection === item.id
-                    ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
+                    ? 'bg-teal-100 text-teal-700 dark:bg-mint/20 dark:text-mint'
                     : 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700'
                 }`}
               >
@@ -446,7 +446,7 @@ function ExperienceManager() {
             });
             setShowForm(true);
           }}
-          className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+          className="inline-flex items-center gap-2 rounded-lg bg-teal-600 px-4 py-2 text-sm font-medium text-white hover:bg-teal-700"
         >
           <Plus size={18} />
           Add experience
@@ -547,7 +547,7 @@ function ExperienceManager() {
           <button
             type="button"
             onClick={handleSave}
-            className="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 font-medium text-white hover:bg-blue-700"
+            className="flex items-center gap-2 rounded-lg bg-teal-600 px-4 py-2 font-medium text-white hover:bg-teal-700"
           >
             <Save size={18} />
             {editingId ? 'Update' : 'Save'} experience
@@ -581,7 +581,7 @@ function ExperienceManager() {
                   {exp.startDate} - {exp.endDate || 'Present'}
                 </p>
                 <p className="mt-2 text-gray-700 dark:text-gray-300">{exp.description}</p>
-                <p className="mt-1 text-xs text-blue-600 dark:text-blue-400">
+                <p className="mt-1 text-xs text-teal-600 dark:text-mint">
                   {Array.isArray(exp.technologies) ? exp.technologies.join(', ') : exp.technologies}
                 </p>
               </div>
@@ -596,7 +596,7 @@ function ExperienceManager() {
                     setEditingId(exp.id);
                     setShowForm(true);
                   }}
-                  className="rounded-lg bg-blue-100 px-3 py-1 text-sm font-medium text-blue-700 hover:bg-blue-200 dark:bg-blue-900/30 dark:text-blue-400"
+                  className="rounded-lg bg-teal-100 px-3 py-1 text-sm font-medium text-teal-700 hover:bg-teal-200 dark:bg-mint/20 dark:text-mint"
                 >
                   Edit
                 </button>
@@ -637,8 +637,30 @@ function ProjectsManager() {
     images: [] as string[],
     featured: false,
   });
-  const [newImageUrl, setNewImageUrl] = useState('');
   const [dragImageIndex, setDragImageIndex] = useState<number | null>(null);
+  const projectImagesInputRef = useRef<HTMLInputElement | null>(null);
+  const PROJECT_IMAGE_CACHE_MAX_DATA_URL_CHARS = 1_200_000;
+
+  const projectsForLocalStorage = (rows: any[]) =>
+    rows.map((proj) => {
+      const images = Array.isArray(proj.images)
+        ? proj.images.filter(
+            (img: unknown) =>
+              typeof img === 'string' &&
+              (!img.startsWith('data:') || img.length <= PROJECT_IMAGE_CACHE_MAX_DATA_URL_CHARS)
+          )
+        : [];
+      const primary =
+        typeof proj.image === 'string' &&
+        (!proj.image.startsWith('data:') || proj.image.length <= PROJECT_IMAGE_CACHE_MAX_DATA_URL_CHARS)
+          ? proj.image
+          : images[0] ?? '';
+      return {
+        ...proj,
+        image: primary,
+        images,
+      };
+    });
 
   useEffect(() => {
     let cancelled = false;
@@ -648,7 +670,21 @@ function ProjectsManager() {
           const rows = await fetchProjectsForAdmin();
           if (!cancelled) {
             skipNextPersist.current = true;
-            setProjects(rows);
+            if (rows.length > 0) {
+              setProjects(rows);
+            } else {
+              const saved = localStorage.getItem('portfolio_projects');
+              if (saved) {
+                try {
+                  const parsed = JSON.parse(saved);
+                  setProjects(parsed.length > 0 ? parsed : []);
+                } catch {
+                  setProjects([]);
+                }
+              } else {
+                setProjects([]);
+              }
+            }
           }
         } else {
           const saved = localStorage.getItem('portfolio_projects');
@@ -687,20 +723,59 @@ function ProjectsManager() {
 
   const resetForm = () => {
     setFormData(emptyProjectForm());
-    setNewImageUrl('');
     setDragImageIndex(null);
+    if (projectImagesInputRef.current) projectImagesInputRef.current.value = '';
     setEditingId(null);
     setShowForm(false);
   };
 
-  const addProjectImage = () => {
-    const next = newImageUrl.trim();
-    if (!next) return;
-    setFormData((prev) => {
-      if (prev.images.includes(next)) return prev;
-      return { ...prev, images: [...prev.images, next] };
-    });
-    setNewImageUrl('');
+  const handleProjectImageFiles = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const inputEl = e.currentTarget;
+    const files = Array.from(inputEl.files ?? []);
+    if (!files.length) return;
+
+    const MAX_FILE_BYTES = 8 * 1024 * 1024;
+    const oversized = files.find((file) => file.size > MAX_FILE_BYTES);
+    if (oversized) {
+      const limitMb = (MAX_FILE_BYTES / (1024 * 1024)).toFixed(0);
+      const actualMb = (oversized.size / (1024 * 1024)).toFixed(2);
+      showAdminAlert(
+        `Image "${oversized.name}" is too large (${actualMb}MB). Max allowed is ${limitMb}MB.`,
+        'warning'
+      );
+      inputEl.value = '';
+      return;
+    }
+
+    const toDataUrl = (file: File) =>
+      new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(String(reader.result ?? ''));
+        reader.onerror = () => reject(new Error(`Failed to read ${file.name}`));
+        reader.readAsDataURL(file);
+      });
+
+    try {
+      const imported = (await Promise.all(files.map((file) => toDataUrl(file))))
+        .map((img) => img.trim())
+        .filter(Boolean);
+      if (!imported.length) return;
+      setFormData((prev) => {
+        const merged = [...prev.images];
+        for (const img of imported) {
+          if (!merged.includes(img)) merged.push(img);
+        }
+        return {
+          ...prev,
+          image: prev.image || merged[0] || '',
+          images: merged,
+        };
+      });
+    } catch {
+      showAdminAlert('Failed to import one or more images. Please try again.', 'error');
+    } finally {
+      inputEl.value = '';
+    }
   };
 
   const removeProjectImage = (index: number) => {
@@ -754,7 +829,32 @@ function ProjectsManager() {
       skipNextPersist.current = false;
       return;
     }
-    localStorage.setItem('portfolio_projects', JSON.stringify(projects));
+    try {
+      localStorage.setItem('portfolio_projects', JSON.stringify(projectsForLocalStorage(projects)));
+    } catch (e) {
+      const quota =
+        e instanceof DOMException &&
+        (e.name === 'QuotaExceededError' || (e as DOMException).code === 22);
+      if (!quota) throw e;
+      try {
+        localStorage.setItem(
+          'portfolio_projects',
+          JSON.stringify(
+            projects.map((proj: any) => ({
+              ...proj,
+              image: typeof proj.image === 'string' && proj.image.startsWith('data:') ? '' : proj.image,
+              images: Array.isArray(proj.images)
+                ? proj.images.filter(
+                    (img: unknown) => typeof img === 'string' && !img.startsWith('data:')
+                  )
+                : [],
+            }))
+          )
+        );
+      } catch {
+        console.warn('[admin] localStorage quota exceeded; projects cache reduced');
+      }
+    }
     if (isSupabaseConfigured)
       saveProjects(projects).catch((e) => warnSupabaseSync('Sync projects', e));
   }, [projects]);
@@ -776,7 +876,7 @@ function ProjectsManager() {
             setFormData(emptyProjectForm());
             setShowForm(true);
           }}
-          className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+          className="inline-flex items-center gap-2 rounded-lg bg-teal-600 px-4 py-2 text-sm font-medium text-white hover:bg-teal-700"
         >
           <Plus size={18} />
           Add project
@@ -873,34 +973,28 @@ function ProjectsManager() {
             />
           </div>
           <div className="col-span-1 md:col-span-2">
-            <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Project Image URL</label>
-            <input
-              type="url"
-              placeholder="Image URL"
-              value={formData.image}
-              onChange={(e) => setFormData({ ...formData, image: e.target.value })}
-              className="w-full rounded-lg border border-gray-300 px-4 py-2 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
-            />
-          </div>
-          <div className="col-span-1 md:col-span-2">
             <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
-              Project Images (drag to reorder)
+              Project Images (import files, then drag to reorder)
             </label>
-            <div className="mb-3 flex gap-2">
-              <input
-                type="url"
-                placeholder="https://example.com/image.jpg"
-                value={newImageUrl}
-                onChange={(e) => setNewImageUrl(e.target.value)}
-                className="w-full rounded-lg border border-gray-300 px-4 py-2 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white"
-              />
+            <div className="mb-3 flex items-center gap-2">
               <button
                 type="button"
-                onClick={addProjectImage}
-                className="rounded-lg bg-blue-600 px-3 py-2 text-sm font-medium text-white hover:bg-blue-700"
+                onClick={() => projectImagesInputRef.current?.click()}
+                className="rounded-lg bg-teal-600 px-3 py-2 text-sm font-medium text-white hover:bg-teal-700"
               >
-                Add
+                Import image files
               </button>
+              <input
+                ref={projectImagesInputRef}
+                type="file"
+                accept="image/*"
+                multiple
+                onChange={handleProjectImageFiles}
+                className="hidden"
+              />
+              <span className="text-xs text-gray-500 dark:text-gray-400">
+                JPG, PNG, WebP, GIF up to 8MB each
+              </span>
             </div>
             {formData.images.length > 0 ? (
               <div className="space-y-2">
@@ -975,7 +1069,7 @@ function ProjectsManager() {
           <button
             type="button"
             onClick={handleSave}
-            className="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 font-medium text-white hover:bg-blue-700"
+            className="flex items-center gap-2 rounded-lg bg-teal-600 px-4 py-2 font-medium text-white hover:bg-teal-700"
           >
             <Save size={18} />
             {editingId ? 'Update' : 'Save'} project
@@ -1034,7 +1128,7 @@ function ProjectsManager() {
                   ).map((tag: string, i: number) => (
                     <span
                       key={`${proj.id}-tag-${i}-${tag}`}
-                      className="rounded-full bg-blue-100 px-2 py-1 text-xs text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
+                      className="rounded-full bg-teal-100 px-2 py-1 text-xs text-teal-700 dark:bg-mint/20 dark:text-mint"
                     >
                       {tag}
                     </span>
@@ -1050,17 +1144,17 @@ function ProjectsManager() {
                       ...proj,
                       rating: Number(proj.rating ?? 3.3),
                       tags: Array.isArray(proj.tags) ? proj.tags.join(', ') : proj.tags,
+                      image: String(proj.image ?? ''),
                       images: Array.isArray(proj.images)
                         ? proj.images
                         : proj.image
                           ? [String(proj.image)]
                           : [],
                     });
-                    setNewImageUrl('');
                     setEditingId(proj.id);
                     setShowForm(true);
                   }}
-                  className="rounded-lg bg-blue-100 px-3 py-1 text-sm font-medium text-blue-700 hover:bg-blue-200 dark:bg-blue-900/30 dark:text-blue-400"
+                  className="rounded-lg bg-teal-100 px-3 py-1 text-sm font-medium text-teal-700 hover:bg-teal-200 dark:bg-mint/20 dark:text-mint"
                 >
                   Edit
                 </button>
@@ -1176,7 +1270,7 @@ function SkillsManager() {
             setFormData({ name: '', category: 'Frontend', proficiency: 80 });
             setShowForm(true);
           }}
-          className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+          className="inline-flex items-center gap-2 rounded-lg bg-teal-600 px-4 py-2 text-sm font-medium text-white hover:bg-teal-700"
         >
           <Plus size={18} />
           Add skill
@@ -1231,7 +1325,7 @@ function SkillsManager() {
           <button
             type="button"
             onClick={handleSave}
-            className="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 font-medium text-white hover:bg-blue-700"
+            className="flex items-center gap-2 rounded-lg bg-teal-600 px-4 py-2 font-medium text-white hover:bg-teal-700"
           >
             <Save size={18} />
             {editingId ? 'Update' : 'Save'} skill
@@ -1608,7 +1702,7 @@ function ArticlesManager() {
                     setEditingId(article.id);
                     setShowForm(true);
                   }}
-                  className="rounded-lg bg-blue-100 px-3 py-1 text-sm font-medium text-blue-700 hover:bg-blue-200 dark:bg-blue-900/30 dark:text-blue-400"
+                  className="rounded-lg bg-teal-100 px-3 py-1 text-sm font-medium text-teal-700 hover:bg-teal-200 dark:bg-mint/20 dark:text-mint"
                 >
                   Edit
                 </button>
@@ -1723,7 +1817,7 @@ function TestimonialsManager() {
             setFormData({ name: '', role: '', company: '', quote: '', avatar: '' });
             setShowForm(true);
           }}
-          className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+          className="inline-flex items-center gap-2 rounded-lg bg-teal-600 px-4 py-2 text-sm font-medium text-white hover:bg-teal-700"
         >
           <Plus size={18} />
           Add testimonial
@@ -1793,7 +1887,7 @@ function TestimonialsManager() {
           <button
             type="button"
             onClick={handleSave}
-            className="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 font-medium text-white hover:bg-blue-700"
+            className="flex items-center gap-2 rounded-lg bg-teal-600 px-4 py-2 font-medium text-white hover:bg-teal-700"
           >
             <Save size={18} />
             {editingId ? 'Update' : 'Save'} testimonial
@@ -1837,7 +1931,7 @@ function TestimonialsManager() {
                     setEditingId(testimonial.id);
                     setShowForm(true);
                   }}
-                  className="rounded-lg bg-blue-100 px-3 py-1 text-sm font-medium text-blue-700 hover:bg-blue-200 dark:bg-blue-900/30 dark:text-blue-400"
+                  className="rounded-lg bg-teal-100 px-3 py-1 text-sm font-medium text-teal-700 hover:bg-teal-200 dark:bg-mint/20 dark:text-mint"
                 >
                   Edit
                 </button>
@@ -2088,7 +2182,7 @@ function ProfileManager() {
           <button
             type="button"
             onClick={() => setShowProfileEditor(true)}
-            className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+            className="rounded-lg bg-teal-600 px-4 py-2 text-sm font-medium text-white hover:bg-teal-700"
           >
             Edit Profile
           </button>
@@ -2125,14 +2219,14 @@ function ProfileManager() {
                 <button
                   type="button"
                   onClick={() => setPhotoMode('upload')}
-                  className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${photoMode === 'upload' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300'}`}
+                  className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${photoMode === 'upload' ? 'bg-teal-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300'}`}
                 >
                   Upload File
                 </button>
                 <button
                   type="button"
                   onClick={() => setPhotoMode('url')}
-                  className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${photoMode === 'url' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300'}`}
+                  className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${photoMode === 'url' ? 'bg-teal-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300'}`}
                 >
                   Use URL
                 </button>
@@ -2261,7 +2355,7 @@ function ProfileManager() {
                   title: profile.title,
                 })
               }
-              className="mt-1 inline-flex items-center gap-1 rounded-lg border border-dashed border-gray-300 px-3 py-1.5 text-sm text-blue-600 hover:bg-gray-50 dark:border-gray-600 dark:text-blue-400 dark:hover:bg-gray-700/50"
+              className="mt-1 inline-flex items-center gap-1 rounded-lg border border-dashed border-gray-300 px-3 py-1.5 text-sm text-teal-600 hover:bg-gray-50 dark:border-gray-600 dark:text-mint dark:hover:bg-gray-700/50"
             >
               <Plus size={16} />
               Add role
@@ -2351,7 +2445,7 @@ function ProfileManager() {
 
         <button
           onClick={handleSave}
-          className="w-full rounded-lg bg-blue-600 px-4 py-2 font-medium text-white transition-all hover:bg-blue-700 active:scale-95 flex items-center justify-center gap-2"
+          className="w-full rounded-lg bg-teal-600 px-4 py-2 font-medium text-white transition-all hover:bg-teal-700 active:scale-95 flex items-center justify-center gap-2"
         >
           <Save size={18} />
           Save Profile Changes

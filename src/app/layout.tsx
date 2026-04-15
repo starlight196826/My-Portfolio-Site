@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Open_Sans, Poppins } from "next/font/google";
 import { ThemeProvider } from "next-themes";
+import { fetchPublicProfile } from "@/lib/supabasePublic";
 import "./globals.css";
 
 const openSans = Open_Sans({
@@ -16,25 +17,41 @@ const poppins = Poppins({
   display: "swap",
 });
 
-export const metadata: Metadata = {
-  title: {
-    default: "Portfolio",
-    template: "%s | Portfolio",
-  },
-  description: "Professional portfolio — content is loaded from the database.",
-  openGraph: {
-    type: "website",
-    locale: "en_US",
-    title: "Portfolio",
-    description: "Professional portfolio.",
-    siteName: "Portfolio",
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: "Portfolio",
-    description: "Professional portfolio.",
-  },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  let brand = "Portfolio";
+  try {
+    const profile = await fetchPublicProfile();
+    const name = profile?.name?.trim();
+    if (name) brand = name;
+  } catch {
+    // Keep fallback metadata when profile data is unavailable.
+  }
+
+  return {
+    title: {
+      default: brand,
+      template: `%s | ${brand}`,
+    },
+    description: "Professional portfolio — content is loaded from the database.",
+    icons: {
+      icon: "/logo.png",
+      shortcut: "/logo.png",
+      apple: "/logo.png",
+    },
+    openGraph: {
+      type: "website",
+      locale: "en_US",
+      title: brand,
+      description: "Professional portfolio.",
+      siteName: brand,
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: brand,
+      description: "Professional portfolio.",
+    },
+  };
+}
 
 export default function RootLayout({
   children,

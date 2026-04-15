@@ -205,6 +205,37 @@ export function usePortfolioData() {
         };
       });
     }
+    // If Supabase projects are empty (or temporarily unavailable), fallback to locally cached projects.
+    if (mergedData.projects.length === 0) {
+      try {
+        const savedProjects = localStorage.getItem('portfolio_projects');
+        if (savedProjects) {
+          const localProjects = JSON.parse(savedProjects);
+          if (Array.isArray(localProjects) && localProjects.length > 0) {
+            mergedData.projects = localProjects.map((proj: any) => {
+              const localImages = Array.isArray(proj.images)
+                ? proj.images.map((v: unknown) => String(v).trim()).filter(Boolean)
+                : String(proj.image ?? '').trim()
+                  ? [String(proj.image).trim()]
+                  : [];
+              return {
+                ...proj,
+                image: String(proj.image ?? '').trim() || localImages[0] || '',
+                images: localImages,
+                tags: Array.isArray(proj.tags)
+                  ? proj.tags
+                  : String(proj.tags ?? '')
+                      .split(',')
+                      .map((t: string) => t.trim())
+                      .filter(Boolean),
+              };
+            });
+          }
+        }
+      } catch (error) {
+        console.warn('[supabase] projects fallback from localStorage failed', error);
+      }
+    }
 
     if (blogErr) logSupabaseError('articles', blogErr);
     else if (blogPosts && blogPosts.length > 0) {

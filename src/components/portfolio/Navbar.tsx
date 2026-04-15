@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { Menu, X, Moon, Sun, Download } from "lucide-react";
 import { useTheme } from "next-themes";
 import { usePortfolioData } from "@/hooks/usePortfolioData";
@@ -80,8 +81,16 @@ export default function Navbar() {
       <div className="section-container flex min-h-[2.75rem] items-center justify-between py-2 sm:min-h-[3rem] sm:py-2.5">
         <Link
           href="/"
-          className="group relative flex items-center font-poppins text-xl font-bold tracking-tight text-gray-900 dark:text-mint"
+          className="group relative flex items-center gap-2 font-poppins text-xl font-bold tracking-tight text-gray-900 dark:text-mint"
         >
+          <Image
+            src="/logo.png"
+            alt={`${brand} logo`}
+            width={26}
+            height={26}
+            className="h-6 w-6 sm:h-7 sm:w-7 [filter:hue-rotate(-10deg)_saturate(1.35)_contrast(1.15)_brightness(1.04)] dark:[filter:hue-rotate(18deg)_saturate(1.45)_contrast(1.12)_brightness(1.1)]"
+            priority
+          />
           <span className="relative z-10">{brand}</span>
           <span className="absolute -bottom-1 left-0 right-0 h-0.5 origin-left scale-x-0 bg-gradient-to-r from-mint to-slate-heading transition-transform duration-300 group-hover:scale-x-100" />
         </Link>

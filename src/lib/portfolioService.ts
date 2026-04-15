@@ -52,8 +52,10 @@ export async function saveExperiences(experiences: any[]) {
 
 // ── Projects ───────────────────────────────────────────────────
 export async function saveProjects(projects: any[]) {
-  await supabase.from('projects').delete().neq('id', 0);
-  if (projects.length === 0) return;
+  if (projects.length === 0) {
+    await supabase.from('projects').delete().neq('id', 0);
+    return;
+  }
   const normalizeImages = (p: any): string[] => {
     const list = Array.isArray(p.images) ? p.images : [];
     const cleaned = list.map((s: unknown) => String(s).trim()).filter(Boolean);
@@ -61,17 +63,62 @@ export async function saveProjects(projects: any[]) {
     const legacy = String(p.image ?? '').trim();
     return legacy ? [legacy] : [];
   };
-  const baseRows = projects.map((p) => {
-    const images = normalizeImages(p);
+  const uploadCache = new Map<string, string>();
+  const resolveUploadedImage = async (
+    raw: unknown,
+    projectId: string,
+    imageIndex: number
+  ): Promise<string> => {
+    const value = typeof raw === 'string' ? raw.trim() : '';
+    if (!value) return '';
+    if (!value.startsWith('data:')) return value;
+    if (uploadCache.has(value)) return uploadCache.get(value) || '';
+    const uploaded = await resolveProjectImageUrl(value, projectId, imageIndex);
+    uploadCache.set(value, uploaded);
+    return uploaded;
+  };
+
+  const normalizedProjects = await Promise.all(
+    projects.map(async (p, projectIndex) => {
+      const projectId = String(p.id ?? `project-${projectIndex}`);
+      const sourceImages = normalizeImages(p);
+      const resolvedImages = (
+        await Promise.all(
+          sourceImages.map((img, imageIndex) => resolveUploadedImage(img, projectId, imageIndex))
+        )
+      ).filter(Boolean);
+
+      const sourcePrimary = String(p.image ?? '').trim();
+      const resolvedPrimary = sourcePrimary
+        ? await resolveUploadedImage(sourcePrimary, projectId, -1)
+        : resolvedImages[0] || '';
+
+      const imageUrls = resolvedImages.length
+        ? resolvedImages
+        : resolvedPrimary
+          ? [resolvedPrimary]
+          : [];
+
+      return {
+        ...p,
+        __projectId: projectId,
+        __resolvedPrimary: resolvedPrimary || imageUrls[0] || '',
+        __resolvedImages: imageUrls,
+      };
+    })
+  );
+
+  const baseRows = normalizedProjects.map((p) => {
+    const images = Array.isArray(p.__resolvedImages) ? p.__resolvedImages : [];
     return {
-      id: p.id,
+      id: p.__projectId,
       title: p.title,
       description: p.description,
       excerpt: p.excerpt,
       category: p.category,
       live_url: p.liveUrl,
       github_url: p.githubUrl,
-      image_url: String(p.image ?? '').trim() || images[0] || '',
+      image_url: String(p.__resolvedPrimary ?? '').trim() || images[0] || '',
       image_urls: images,
       featured: p.featured ?? false,
       tags: Array.isArray(p.tags) ? p.tags : (p.tags || '').split(',').map((t: string) => t.trim()),
@@ -79,8 +126,12 @@ export async function saveProjects(projects: any[]) {
   });
   const withRatingRows = baseRows.map((row, index) => ({
     ...row,
-    review_rating: Number(projects[index]?.rating ?? 3.3),
+    review_rating: Number(normalizedProjects[index]?.rating ?? 3.3),
   }));
+
+  // Only replace DB rows after all image uploads/normalization succeeded.
+  // This prevents wiping the table when Storage upload fails mid-save.
+  await supabase.from('projects').delete().neq('id', 0);
 
   const withRating = await supabase.from('projects').insert(withRatingRows);
   if (!withRating.error) return;
@@ -198,6 +249,31 @@ async function resolveProfileImageUrl(profileImage: unknown): Promise<string | u
     // Fallback path for RLS-restricted storage buckets:
     // persist the data URL directly in `profile.profile_image_url`.
     return value;
+  }
+}
+
+async function resolveProjectImageUrl(
+  dataUrl: string,
+  projectId: string,
+  imageIndex: number
+): Promise<string> {
+  try {
+    const { bytes, contentType, extension } = dataUrlToUpload(dataUrl);
+    const filePath = `projects/${projectId}-${Date.now()}-${imageIndex}.${extension}`;
+    const { error: uploadError } = await supabase.storage
+      .from('project-images')
+      .upload(filePath, bytes, { contentType, upsert: true });
+    if (uploadError) throw uploadError;
+
+    const { data } = supabase.storage.from('project-images').getPublicUrl(filePath);
+    const publicUrl = data.publicUrl?.trim();
+    if (!publicUrl) throw new Error('Missing public URL for uploaded project image');
+    return publicUrl;
+  } catch (error) {
+    console.warn('[supabase] project image upload failed', error);
+    throw new Error(
+      'Project image upload failed. Check Supabase Storage bucket "project-images" and policies.'
+    );
   }
 }
 
