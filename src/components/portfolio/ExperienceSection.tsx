@@ -10,14 +10,14 @@ export default function ExperienceSection() {
 
   if (isLoading) {
     return (
-      <section id="experience" className="bg-gray-50 py-16 dark:bg-gray-950">
-        <div className="section-container py-12 text-center text-gray-500 dark:text-gray-400">Loading…</div>
+      <section id="experience" className="bg-sky-50 py-16 dark:bg-transparent">
+        <div className="section-container py-12 text-center text-gray-500 dark:text-slate-portfolio">Loading…</div>
       </section>
     );
   }
 
   return (
-    <section id="experience" className="bg-gray-50 py-16 dark:bg-gray-950">
+    <section id="experience" className="bg-sky-50 py-16 dark:bg-transparent">
       <div className="section-container">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -26,10 +26,8 @@ export default function ExperienceSection() {
           viewport={{ once: true }}
           className="mb-12 text-center"
         >
-          <h2 className="mb-4 text-3xl font-bold text-gray-900 dark:text-white sm:text-4xl">
-            Work Experience
-          </h2>
-          <div className="mx-auto h-1 w-16 bg-gradient-to-r from-blue-400 to-purple-500"></div>
+          <h2 className="portfolio-section-title">Work Experience</h2>
+          <div className="mx-auto h-1 w-16 bg-gradient-to-r from-teal-400 to-sky-500 dark:from-mint dark:to-pink-300"></div>
         </motion.div>
 
         <div className="space-y-8">
@@ -44,35 +42,35 @@ export default function ExperienceSection() {
             >
               {/* Content */}
               <div className={index % 2 === 1 ? "order-2 lg:order-1" : ""}>
-                <div className="rounded-lg bg-white p-6 shadow-md dark:bg-gray-900">
+                <div className="rounded-lg border border-sky-100 bg-sky-50/80 p-6 shadow-md dark:border-navy-border dark:bg-navy-muted">
                   <div className="mb-4 flex items-start justify-between">
                     <div>
-                      <h3 className="text-xl font-bold text-gray-900 dark:text-white">
+                      <h3 className="text-xl font-bold text-gray-900 dark:text-slate-heading">
                         {experience.role}
                       </h3>
-                      <p className="text-blue-600 dark:text-blue-400">{experience.company}</p>
+                      <p className="text-teal-600 dark:text-mint">{experience.company}</p>
                     </div>
                     {experience.current && (
-                      <span className="rounded-full bg-blue-100 px-3 py-1 text-xs font-semibold text-blue-600 dark:bg-blue-900/20 dark:text-blue-400">
+                      <span className="rounded-full bg-teal-100 px-3 py-1 text-xs font-semibold text-teal-700 dark:bg-mint/15 dark:text-mint">
                         Current
                       </span>
                     )}
                   </div>
 
-                  <div className="mb-4 flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                  <div className="mb-4 flex items-center gap-2 text-sm text-gray-600 dark:text-slate-portfolio">
                     <Calendar size={16} />
                     <span>
                       {experience.startDate} - {experience.endDate || "Present"}
                     </span>
                   </div>
 
-                  <p className="mb-4 text-gray-700 dark:text-gray-300">{experience.description}</p>
+                  <p className="mb-4 text-gray-700 dark:text-slate-portfolio">{experience.description}</p>
 
                   <div className="flex flex-wrap gap-2">
                     {experience.technologies.map((tech, i) => (
                       <span
                         key={i}
-                        className="rounded-full bg-blue-100 px-3 py-1 text-xs font-medium text-blue-700 dark:bg-blue-900/30 dark:text-blue-300"
+                        className="rounded-full bg-teal-100 px-3 py-1 text-xs font-medium text-teal-700 dark:bg-mint/10 dark:text-mint"
                       >
                         {tech}
                       </span>
@@ -84,9 +82,9 @@ export default function ExperienceSection() {
               {/* Timeline dot */}
               <div className={`flex justify-center ${index % 2 === 1 ? "order-1 lg:order-2" : ""}`}>
                 <div className="flex flex-col items-center">
-                  <div className="h-4 w-4 rounded-full bg-blue-600"></div>
+                  <div className="h-4 w-4 rounded-full bg-teal-600 dark:bg-mint"></div>
                   {index < workExperiences.length - 1 && (
-                    <div className="h-16 w-1 bg-gradient-to-b from-blue-600 to-transparent"></div>
+                    <div className="h-16 w-1 bg-gradient-to-b from-teal-600 to-transparent dark:from-mint"></div>
                   )}
                 </div>
               </div>

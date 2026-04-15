@@ -39,8 +39,8 @@ export default function BlogSection() {
 
   if (isLoading) {
     return (
-      <section id="blog" className="bg-white py-16 dark:bg-gray-900">
-        <div className="section-container py-12 text-center text-gray-500 dark:text-gray-400">
+      <section id="blog" className="bg-sky-50 py-16 dark:bg-transparent">
+        <div className="section-container py-12 text-center text-gray-500 dark:text-slate-portfolio">
           Loading…
         </div>
       </section>
@@ -48,7 +48,7 @@ export default function BlogSection() {
   }
 
   return (
-    <section id="blog" className="bg-white py-16 dark:bg-gray-900">
+    <section id="blog" className="bg-sky-50 py-16 dark:bg-transparent">
       <div className="section-container">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -57,10 +57,8 @@ export default function BlogSection() {
           viewport={{ once: true }}
           className="mb-12 text-center"
         >
-          <h2 className="mb-4 text-3xl font-bold text-gray-900 dark:text-white sm:text-4xl">
-            Latest Articles
-          </h2>
-          <div className="mx-auto h-1 w-16 bg-gradient-to-r from-blue-400 to-purple-500"></div>
+          <h2 className="portfolio-section-title">Latest Articles</h2>
+          <div className="mx-auto h-1 w-16 bg-gradient-to-r from-teal-400 to-sky-500 dark:from-mint dark:to-pink-300"></div>
         </motion.div>
 
         {/* Search Box */}
@@ -78,7 +76,7 @@ export default function BlogSection() {
               placeholder="Search articles..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full rounded-lg border border-gray-200 bg-white py-2 pl-10 pr-10 text-gray-900 placeholder-gray-500 focus:border-blue-500 focus:outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-white"
+              className="w-full rounded-lg border border-sky-200 bg-sky-50 py-2 pl-10 pr-10 text-gray-900 placeholder-gray-500 focus:border-teal-500 focus:outline-none dark:border-navy-border dark:bg-navy-muted dark:text-slate-heading"
             />
             {searchQuery && (
               <button
@@ -105,8 +103,8 @@ export default function BlogSection() {
               onClick={() => setSelectedCategory(category)}
               className={`rounded-full px-4 py-2 text-sm font-medium transition-all ${
                 selectedCategory === category
-                  ? "bg-blue-600 text-white"
-                  : "bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
+                  ? "bg-teal-500 text-white dark:bg-gradient-to-r dark:from-mint dark:to-mint-dark dark:text-navy"
+                  : "border border-sky-100 bg-sky-50 text-gray-700 hover:bg-sky-100 dark:border dark:border-navy-border dark:bg-navy-muted dark:text-slate-portfolio dark:hover:border-mint/40"
               }`}
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
@@ -117,7 +115,7 @@ export default function BlogSection() {
         </motion.div>
 
         {/* Results count */}
-        <p className="mb-8 text-sm text-gray-600 dark:text-gray-400">
+        <p className="mb-8 text-sm text-gray-600 dark:text-slate-portfolio">
           {filteredPosts.length} article{filteredPosts.length !== 1 ? "s" : ""} found
         </p>
 
@@ -130,13 +128,13 @@ export default function BlogSection() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 20 }}
               transition={{ duration: 0.4 }}
-              className="mb-12"
+              className="mb-10"
             >
               <Link href={`/blog/${featuredPost.slug}`}>
-                <div className="group cursor-pointer overflow-hidden rounded-lg bg-gradient-to-br from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20">
-                  <div className="grid gap-6 md:grid-cols-2">
+                <div className="group cursor-pointer overflow-hidden rounded-lg border border-sky-100 bg-gradient-to-br from-teal-50 to-sky-50 dark:border-navy-border dark:from-navy-muted/80 dark:to-navy-muted/40">
+                  <div className="grid gap-5 md:grid-cols-2">
                     {/* Image */}
-                    <div className="relative h-64 overflow-hidden bg-gray-200 dark:bg-gray-700 md:h-auto">
+                    <div className="relative h-64 overflow-hidden bg-gray-200 dark:bg-navy md:h-auto">
                       {featuredPost.coverImage ? (
                         <Image
                           src={featuredPost.coverImage}
@@ -149,17 +147,17 @@ export default function BlogSection() {
                     </div>
 
                     {/* Content */}
-                    <div className="flex flex-col justify-center p-8">
-                      <div className="mb-3 inline-flex w-fit rounded-full bg-blue-200 px-3 py-1 text-xs font-semibold text-blue-700 dark:bg-blue-900/40 dark:text-blue-300">
+                    <div className="flex flex-col justify-center p-6">
+                      <div className="mb-3 inline-flex w-fit rounded-full bg-teal-100 px-3 py-1 text-xs font-semibold text-teal-700 dark:bg-mint/15 dark:text-mint">
                         {featuredPost.category}
                       </div>
-                      <h3 className="mb-3 text-2xl font-bold text-gray-900 dark:text-white">
+                      <h3 className="mb-3 text-2xl font-bold text-gray-900 dark:text-slate-heading">
                         {featuredPost.title}
                       </h3>
-                      <p className="mb-4 text-gray-600 dark:text-gray-400">
+                      <p className="mb-3 text-gray-600 dark:text-slate-portfolio">
                         {featuredPost.excerpt}
                       </p>
-                      <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400">
+                      <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-slate-portfolio">
                         <span>{new Date(featuredPost.publishedAt).toLocaleDateString()}</span>
                         <span>{featuredPost.readTime} min read</span>
                       </div>
@@ -180,7 +178,7 @@ export default function BlogSection() {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.4 }}
-              className="grid gap-8 md:grid-cols-2 lg:grid-cols-3"
+              className="grid gap-6 md:grid-cols-2 lg:grid-cols-3"
             >
               {remainingPosts.map((post, index) => (
                 <Link key={post.id} href={`/blog/${post.slug}`}>
@@ -188,10 +186,10 @@ export default function BlogSection() {
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: index * 0.1, duration: 0.5 }}
-                    className="group h-full overflow-hidden rounded-lg bg-white shadow-md transition-shadow hover:shadow-xl dark:bg-gray-800"
+                    className="group h-full overflow-hidden rounded-lg border border-sky-100 bg-sky-50/80 shadow-md transition-shadow hover:shadow-xl dark:border-navy-border dark:bg-navy-muted dark:hover:border-mint/30"
                   >
                     {/* Image */}
-                    <div className="relative h-48 w-full overflow-hidden bg-gray-200 dark:bg-gray-700">
+                    <div className="relative h-48 w-full overflow-hidden bg-gray-200 dark:bg-navy">
                       {post.coverImage ? (
                         <Image
                           src={post.coverImage}
@@ -204,14 +202,14 @@ export default function BlogSection() {
                     </div>
 
                     {/* Content */}
-                    <div className="p-6">
-                      <div className="mb-2 inline-block rounded-full bg-blue-100 px-3 py-1 text-xs font-semibold text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">
+                    <div className="p-5">
+                      <div className="mb-2 inline-block rounded-full bg-teal-100 px-3 py-1 text-xs font-semibold text-teal-700 dark:bg-mint/10 dark:text-mint">
                         {post.category}
                       </div>
-                      <h3 className="mb-2 text-lg font-bold text-gray-900 dark:text-white">
+                      <h3 className="mb-2 text-lg font-bold text-gray-900 dark:text-slate-heading">
                         {post.title}
                       </h3>
-                      <p className="mb-4 line-clamp-2 text-sm text-gray-600 dark:text-gray-400">
+                      <p className="mb-4 line-clamp-2 text-sm text-gray-600 dark:text-slate-portfolio">
                         {post.excerpt}
                       </p>
 
@@ -233,9 +231,9 @@ export default function BlogSection() {
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="rounded-lg bg-gray-50 p-12 text-center dark:bg-gray-800"
+            className="rounded-lg border border-sky-100 bg-sky-50 p-12 text-center dark:border-navy-border dark:bg-navy-muted"
           >
-            <p className="mb-4 text-gray-600 dark:text-gray-400">No articles found</p>
+            <p className="mb-4 text-gray-600 dark:text-slate-portfolio">No articles found</p>
             <button
               onClick={() => {
                 setSearchQuery("");

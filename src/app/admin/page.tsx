@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, type ReactNode } from 'react';
 import { Menu, X, LogOut, Save, Plus, Trash2, ChevronUp, ChevronDown } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { emptyPortfolioData } from '@/data/portfolioData';
@@ -32,10 +32,97 @@ function warnSupabaseSync(context: string, err: unknown) {
   console.warn(`[admin] ${context}:`, msg);
 }
 
+type AdminAlertType = 'success' | 'warning' | 'error';
+type AdminAlertDetail = { message: string; type?: AdminAlertType };
+const ADMIN_ALERT_EVENT = 'admin-alert';
+
+function showAdminAlert(message: string, type: AdminAlertType = 'warning') {
+  if (typeof window === 'undefined') return;
+  window.dispatchEvent(new CustomEvent<AdminAlertDetail>(ADMIN_ALERT_EVENT, { detail: { message, type } }));
+}
+
 function AdminLoading() {
   return (
     <div className="flex min-h-[200px] items-center justify-center rounded-lg border border-dashed border-gray-300 bg-white dark:border-gray-600 dark:bg-gray-800">
       <p className="text-sm text-gray-500 dark:text-gray-400">Loading from database…</p>
+    </div>
+  );
+}
+
+function AdminAlertModal({
+  open,
+  type,
+  message,
+  onClose,
+}: {
+  open: boolean;
+  type: AdminAlertType;
+  message: string;
+  onClose: () => void;
+}) {
+  if (!open) return null;
+  const palette =
+    type === 'success'
+      ? 'border-emerald-300 bg-gradient-to-br from-emerald-100 to-lime-100 text-emerald-900 dark:border-emerald-500/50 dark:from-emerald-900/70 dark:to-lime-900/40 dark:text-emerald-100'
+      : type === 'error'
+        ? 'border-rose-300 bg-gradient-to-br from-rose-100 to-fuchsia-100 text-rose-900 dark:border-rose-500/50 dark:from-rose-900/70 dark:to-fuchsia-900/40 dark:text-rose-100'
+        : 'border-amber-300 bg-gradient-to-br from-amber-100 to-orange-100 text-amber-900 dark:border-amber-500/50 dark:from-amber-900/70 dark:to-orange-900/40 dark:text-amber-100';
+
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/55 p-4 backdrop-blur-sm">
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95, y: 10 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        className={`w-full max-w-md rounded-2xl border p-5 shadow-2xl ${palette}`}
+      >
+        <div className="mb-2 text-xs font-bold uppercase tracking-[0.15em] opacity-80">Notification</div>
+        <p className="text-sm font-medium leading-relaxed">{message}</p>
+        <div className="mt-4 flex justify-end">
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-lg bg-black/15 px-4 py-2 text-sm font-semibold transition hover:bg-black/25 dark:bg-white/15 dark:hover:bg-white/25"
+          >
+            OK
+          </button>
+        </div>
+      </motion.div>
+    </div>
+  );
+}
+
+function AdminEditModal({
+  open,
+  title,
+  onClose,
+  children,
+}: {
+  open: boolean;
+  title: string;
+  onClose: () => void;
+  children: ReactNode;
+}) {
+  if (!open) return null;
+  return (
+    <div className="fixed inset-0 z-[90] flex items-center justify-center bg-black/55 p-4 backdrop-blur-sm">
+      <motion.div
+        initial={{ opacity: 0, scale: 0.96, y: 12 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        className="max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-2xl bg-white p-6 shadow-2xl dark:bg-gray-800"
+      >
+        <div className="mb-4 flex items-center justify-between">
+          <h2 className="text-xl font-bold text-gray-900 dark:text-white">{title}</h2>
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-lg p-2 text-gray-600 transition hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
+            aria-label="Close editor"
+          >
+            <X size={18} />
+          </button>
+        </div>
+        {children}
+      </motion.div>
     </div>
   );
 }
@@ -47,11 +134,27 @@ export default function AdminPage() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [activeSection, setActiveSection] = useState('experience');
   const [showPassword, setShowPassword] = useState(false);
+  const [modalAlert, setModalAlert] = useState<{
+    open: boolean;
+    type: AdminAlertType;
+    message: string;
+  }>({ open: false, type: 'warning', message: '' });
 
   // Load authentication state from localStorage
   useEffect(() => {
     const isAuth = localStorage.getItem('admin_authenticated') === 'true';
     setAuthenticated(isAuth);
+  }, []);
+
+  useEffect(() => {
+    const handler = (event: Event) => {
+      const custom = event as CustomEvent<AdminAlertDetail>;
+      const detail = custom.detail;
+      if (!detail?.message) return;
+      setModalAlert({ open: true, type: detail.type ?? 'warning', message: detail.message });
+    };
+    window.addEventListener(ADMIN_ALERT_EVENT, handler as EventListener);
+    return () => window.removeEventListener(ADMIN_ALERT_EVENT, handler as EventListener);
   }, []);
 
   const handleLogin = (e: React.FormEvent) => {
@@ -62,7 +165,7 @@ export default function AdminPage() {
       localStorage.setItem('admin_authenticated', 'true');
       setPassword('');
     } else {
-      alert('Invalid password');
+      showAdminAlert('Invalid password', 'error');
     }
   };
 
@@ -115,6 +218,12 @@ export default function AdminPage() {
             </button>
           </form>
         </motion.div>
+        <AdminAlertModal
+          open={modalAlert.open}
+          type={modalAlert.type}
+          message={modalAlert.message}
+          onClose={() => setModalAlert((prev) => ({ ...prev, open: false }))}
+        />
       </div>
     );
   }
@@ -213,6 +322,12 @@ export default function AdminPage() {
           {activeSection === 'profile' && <ProfileManager />}
         </div>
       </div>
+      <AdminAlertModal
+        open={modalAlert.open}
+        type={modalAlert.type}
+        message={modalAlert.message}
+        onClose={() => setModalAlert((prev) => ({ ...prev, open: false }))}
+      />
     </div>
   );
 }
@@ -282,7 +397,7 @@ function ExperienceManager() {
 
   const handleSave = () => {
     if (!formData.company || !formData.role) {
-      alert('Please fill in company and role');
+      showAdminAlert('Please fill in company and role', 'warning');
       return;
     }
 
@@ -339,30 +454,32 @@ function ExperienceManager() {
       </div>
 
       {formOpen && (
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="rounded-lg bg-white p-6 shadow dark:bg-gray-800"
+      <AdminEditModal
+        open={formOpen}
+        onClose={resetForm}
+        title={editingId ? 'Edit Experience' : 'New Experience'}
       >
-        <h2 className="mb-4 text-xl font-bold text-gray-900 dark:text-white">
-          {editingId ? 'Edit Experience' : 'New experience'}
-        </h2>
-
         <div className="grid gap-4 md:grid-cols-2">
-          <input
-            type="text"
-            placeholder="Company Name"
-            value={formData.company}
-            onChange={(e) => setFormData({ ...formData, company: e.target.value })}
-            className="rounded-lg border border-gray-300 px-4 py-2 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
-          />
-          <input
-            type="text"
-            placeholder="Job Role"
-            value={formData.role}
-            onChange={(e) => setFormData({ ...formData, role: e.target.value })}
-            className="rounded-lg border border-gray-300 px-4 py-2 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
-          />
+          <div>
+            <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Company Name</label>
+            <input
+              type="text"
+              placeholder="Company Name"
+              value={formData.company}
+              onChange={(e) => setFormData({ ...formData, company: e.target.value })}
+              className="w-full rounded-lg border border-gray-300 px-4 py-2 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+            />
+          </div>
+          <div>
+            <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Job Role</label>
+            <input
+              type="text"
+              placeholder="Job Role"
+              value={formData.role}
+              onChange={(e) => setFormData({ ...formData, role: e.target.value })}
+              className="w-full rounded-lg border border-gray-300 px-4 py-2 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+            />
+          </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Start Date</label>
             <input
@@ -379,7 +496,7 @@ function ExperienceManager() {
             <input
               type="month"
               placeholder="End Date (or leave blank if current)"
-              value={formData.endDate}
+              value={formData.endDate ?? ''}
               onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
               disabled={formData.current}
               className="w-full rounded-lg border border-gray-300 px-4 py-2 dark:border-gray-600 dark:bg-gray-700 dark:text-white disabled:opacity-50 disabled:cursor-not-allowed"
@@ -400,20 +517,30 @@ function ExperienceManager() {
             />
             <span className="text-sm font-medium dark:text-white">Current Date</span>
           </label>
-          <textarea
-            placeholder="Description (use • for bullet points)"
-            value={formData.description}
-            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-            className="col-span-1 md:col-span-2 rounded-lg border border-gray-300 px-4 py-2 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
-            rows={3}
-          />
-          <input
-            type="text"
-            placeholder="Technologies (comma separated)"
-            value={formData.technologies}
-            onChange={(e) => setFormData({ ...formData, technologies: e.target.value })}
-            className="col-span-1 md:col-span-2 rounded-lg border border-gray-300 px-4 py-2 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
-          />
+          <div className="col-span-1 md:col-span-2">
+            <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+              Role Description
+            </label>
+            <textarea
+              placeholder="Description (use • for bullet points)"
+              value={formData.description}
+              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              className="w-full rounded-lg border border-gray-300 px-4 py-2 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+              rows={3}
+            />
+          </div>
+          <div className="col-span-1 md:col-span-2">
+            <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+              Technologies Used (comma separated)
+            </label>
+            <input
+              type="text"
+              placeholder="Technologies (comma separated)"
+              value={formData.technologies}
+              onChange={(e) => setFormData({ ...formData, technologies: e.target.value })}
+              className="w-full rounded-lg border border-gray-300 px-4 py-2 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+            />
+          </div>
         </div>
 
         <div className="mt-4 flex gap-2">
@@ -433,7 +560,7 @@ function ExperienceManager() {
             Cancel
           </button>
         </div>
-      </motion.div>
+      </AdminEditModal>
       )}
 
       {/* List */}
@@ -443,7 +570,7 @@ function ExperienceManager() {
             key={exp.id}
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
-            className="rounded-lg bg-white p-4 shadow dark:bg-gray-800"
+            className="rounded-lg bg-gray-100 p-4 shadow dark:bg-gray-800"
           >
             <div className="flex items-start justify-between">
               <div className="flex-1">
@@ -501,13 +628,17 @@ function ProjectsManager() {
     title: '',
     description: '',
     excerpt: '',
+    rating: 3.3,
     tags: '',
     category: '',
     liveUrl: '',
     githubUrl: '',
     image: '',
+    images: [] as string[],
     featured: false,
   });
+  const [newImageUrl, setNewImageUrl] = useState('');
+  const [dragImageIndex, setDragImageIndex] = useState<number | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -544,32 +675,74 @@ function ProjectsManager() {
     title: '',
     description: '',
     excerpt: '',
+    rating: 3.3,
     tags: '',
     category: '',
     liveUrl: '',
     githubUrl: '',
     image: '',
+    images: [] as string[],
     featured: false,
   });
 
   const resetForm = () => {
     setFormData(emptyProjectForm());
+    setNewImageUrl('');
+    setDragImageIndex(null);
     setEditingId(null);
     setShowForm(false);
   };
 
+  const addProjectImage = () => {
+    const next = newImageUrl.trim();
+    if (!next) return;
+    setFormData((prev) => {
+      if (prev.images.includes(next)) return prev;
+      return { ...prev, images: [...prev.images, next] };
+    });
+    setNewImageUrl('');
+  };
+
+  const removeProjectImage = (index: number) => {
+    setFormData((prev) => ({
+      ...prev,
+      images: prev.images.filter((_, i) => i !== index),
+    }));
+  };
+
+  const moveProjectImage = (from: number, to: number) => {
+    if (to < 0) return;
+    setFormData((prev) => {
+      if (to >= prev.images.length) return prev;
+      const next = [...prev.images];
+      const [moved] = next.splice(from, 1);
+      next.splice(to, 0, moved);
+      return { ...prev, images: next };
+    });
+  };
+
   const handleSave = () => {
     if (!formData.title || !formData.description) {
-      alert('Please fill in title and description');
+      showAdminAlert('Please fill in title and description', 'warning');
       return;
     }
+    const rating = Number.isFinite(Number(formData.rating)) ? Number(formData.rating) : 3.3;
+    const normalizedRating = Math.max(0, Math.min(5, Number(rating.toFixed(1))));
+    const images = formData.images.map((s) => s.trim()).filter(Boolean);
+    const primaryImage = formData.image.trim() || images[0] || '';
+    const payload = {
+      ...formData,
+      image: primaryImage,
+      images: images.length > 0 ? images : primaryImage ? [primaryImage] : [],
+      rating: normalizedRating,
+    };
 
     if (editingId) {
       setProjects(
-        projects.map((p: { id: string }) => (p.id === editingId ? { ...formData, id: editingId } : p))
+        projects.map((p: { id: string }) => (p.id === editingId ? { ...payload, id: editingId } : p))
       );
     } else {
-      setProjects([...projects, { ...formData, id: Date.now().toString() }]);
+      setProjects([...projects, { ...payload, id: Date.now().toString() }]);
     }
 
     resetForm();
@@ -611,72 +784,183 @@ function ProjectsManager() {
       </div>
 
       {formOpen && (
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="rounded-lg bg-white p-6 shadow dark:bg-gray-800"
+      <AdminEditModal
+        open={formOpen}
+        onClose={resetForm}
+        title={editingId ? 'Edit Project' : 'New Project'}
       >
-        <h2 className="mb-4 text-xl font-bold text-gray-900 dark:text-white">
-          {editingId ? 'Edit project' : 'New project'}
-        </h2>
-
         <div className="grid gap-4 md:grid-cols-2">
-          <input
-            type="text"
-            placeholder="Project Title"
-            value={formData.title}
-            onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-            className="col-span-1 md:col-span-2 rounded-lg border border-gray-300 px-4 py-2 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
-          />
-          <textarea
-            placeholder="Project Description"
-            value={formData.description}
-            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-            className="col-span-1 md:col-span-2 rounded-lg border border-gray-300 px-4 py-2 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
-            rows={3}
-          />
-          <input
-            type="text"
-            placeholder="Short Excerpt"
-            value={formData.excerpt}
-            onChange={(e) => setFormData({ ...formData, excerpt: e.target.value })}
-            className="rounded-lg border border-gray-300 px-4 py-2 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
-          />
-          <input
-            type="text"
-            placeholder="Category"
-            value={formData.category}
-            onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-            className="rounded-lg border border-gray-300 px-4 py-2 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
-          />
-          <input
-            type="url"
-            placeholder="Live URL"
-            value={formData.liveUrl}
-            onChange={(e) => setFormData({ ...formData, liveUrl: e.target.value })}
-            className="rounded-lg border border-gray-300 px-4 py-2 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
-          />
-          <input
-            type="url"
-            placeholder="GitHub URL"
-            value={formData.githubUrl}
-            onChange={(e) => setFormData({ ...formData, githubUrl: e.target.value })}
-            className="rounded-lg border border-gray-300 px-4 py-2 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
-          />
-          <input
-            type="url"
-            placeholder="Image URL"
-            value={formData.image}
-            onChange={(e) => setFormData({ ...formData, image: e.target.value })}
-            className="col-span-1 md:col-span-2 rounded-lg border border-gray-300 px-4 py-2 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
-          />
-          <input
-            type="text"
-            placeholder="Tags (comma separated)"
-            value={formData.tags}
-            onChange={(e) => setFormData({ ...formData, tags: e.target.value })}
-            className="col-span-1 md:col-span-2 rounded-lg border border-gray-300 px-4 py-2 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
-          />
+          <div className="col-span-1 md:col-span-2">
+            <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Project Title</label>
+            <input
+              type="text"
+              placeholder="Project Title"
+              value={formData.title}
+              onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+              className="w-full rounded-lg border border-gray-300 px-4 py-2 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+            />
+          </div>
+          <div className="col-span-1 md:col-span-2">
+            <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+              Project Description
+            </label>
+            <textarea
+              placeholder="Project Description"
+              value={formData.description}
+              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              className="w-full rounded-lg border border-gray-300 px-4 py-2 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+              rows={3}
+            />
+          </div>
+          <div>
+            <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Short Excerpt</label>
+            <input
+              type="text"
+              placeholder="Short Excerpt"
+              value={formData.excerpt}
+              onChange={(e) => setFormData({ ...formData, excerpt: e.target.value })}
+              className="w-full rounded-lg border border-gray-300 px-4 py-2 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+            />
+          </div>
+          <div>
+            <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+              Review Score (0.0 - 5.0)
+            </label>
+            <input
+              type="number"
+              min={0}
+              max={5}
+              step={0.1}
+              placeholder="Review score (0.0 - 5.0)"
+              value={formData.rating}
+              onChange={(e) =>
+                setFormData({
+                  ...formData,
+                  rating: Number.isFinite(Number(e.target.value)) ? Number(e.target.value) : 0,
+                })
+              }
+              className="w-full rounded-lg border border-gray-300 px-4 py-2 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+            />
+          </div>
+          <div>
+            <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Category</label>
+            <input
+              type="text"
+              placeholder="Category"
+              value={formData.category}
+              onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+              className="w-full rounded-lg border border-gray-300 px-4 py-2 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+            />
+          </div>
+          <div>
+            <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Live URL</label>
+            <input
+              type="url"
+              placeholder="Live URL"
+              value={formData.liveUrl}
+              onChange={(e) => setFormData({ ...formData, liveUrl: e.target.value })}
+              className="w-full rounded-lg border border-gray-300 px-4 py-2 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+            />
+          </div>
+          <div>
+            <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">GitHub URL</label>
+            <input
+              type="url"
+              placeholder="GitHub URL"
+              value={formData.githubUrl}
+              onChange={(e) => setFormData({ ...formData, githubUrl: e.target.value })}
+              className="w-full rounded-lg border border-gray-300 px-4 py-2 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+            />
+          </div>
+          <div className="col-span-1 md:col-span-2">
+            <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Project Image URL</label>
+            <input
+              type="url"
+              placeholder="Image URL"
+              value={formData.image}
+              onChange={(e) => setFormData({ ...formData, image: e.target.value })}
+              className="w-full rounded-lg border border-gray-300 px-4 py-2 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+            />
+          </div>
+          <div className="col-span-1 md:col-span-2">
+            <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+              Project Images (drag to reorder)
+            </label>
+            <div className="mb-3 flex gap-2">
+              <input
+                type="url"
+                placeholder="https://example.com/image.jpg"
+                value={newImageUrl}
+                onChange={(e) => setNewImageUrl(e.target.value)}
+                className="w-full rounded-lg border border-gray-300 px-4 py-2 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+              />
+              <button
+                type="button"
+                onClick={addProjectImage}
+                className="rounded-lg bg-blue-600 px-3 py-2 text-sm font-medium text-white hover:bg-blue-700"
+              >
+                Add
+              </button>
+            </div>
+            {formData.images.length > 0 ? (
+              <div className="space-y-2">
+                {formData.images.map((img, idx) => (
+                  <div
+                    key={`${img}-${idx}`}
+                    draggable
+                    onDragStart={() => setDragImageIndex(idx)}
+                    onDragOver={(e) => e.preventDefault()}
+                    onDrop={() => {
+                      if (dragImageIndex === null || dragImageIndex === idx) return;
+                      moveProjectImage(dragImageIndex, idx);
+                      setDragImageIndex(null);
+                    }}
+                    className="flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-3 py-2 dark:border-gray-600 dark:bg-gray-700"
+                  >
+                    <span className="cursor-grab text-xs text-gray-500 dark:text-gray-400">↕</span>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-xs text-gray-700 dark:text-gray-200">{img}</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => moveProjectImage(idx, idx - 1)}
+                      className="rounded bg-gray-100 px-2 py-1 text-xs text-gray-700 hover:bg-gray-200 dark:bg-gray-600 dark:text-white dark:hover:bg-gray-500"
+                    >
+                      Up
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => moveProjectImage(idx, idx + 1)}
+                      className="rounded bg-gray-100 px-2 py-1 text-xs text-gray-700 hover:bg-gray-200 dark:bg-gray-600 dark:text-white dark:hover:bg-gray-500"
+                    >
+                      Down
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => removeProjectImage(idx)}
+                      className="rounded bg-red-100 px-2 py-1 text-xs text-red-700 hover:bg-red-200 dark:bg-red-900/30 dark:text-red-300"
+                    >
+                      Remove
+                    </button>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-xs text-gray-500 dark:text-gray-400">No additional images yet.</p>
+            )}
+          </div>
+          <div className="col-span-1 md:col-span-2">
+            <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+              Tags (comma separated)
+            </label>
+            <input
+              type="text"
+              placeholder="Tags (comma separated)"
+              value={formData.tags}
+              onChange={(e) => setFormData({ ...formData, tags: e.target.value })}
+              className="w-full rounded-lg border border-gray-300 px-4 py-2 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+            />
+          </div>
           <label className="flex items-center gap-2 rounded-lg border border-gray-300 px-4 py-2 dark:border-gray-600">
             <input
               type="checkbox"
@@ -704,7 +988,7 @@ function ProjectsManager() {
             Cancel
           </button>
         </div>
-      </motion.div>
+      </AdminEditModal>
       )}
 
       <div className="space-y-3">
@@ -713,12 +997,33 @@ function ProjectsManager() {
             key={proj.id}
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
-            className="rounded-lg bg-white p-4 shadow dark:bg-gray-800"
+            className="rounded-lg bg-gray-100 p-4 shadow dark:bg-gray-800"
           >
-            <div className="flex items-start justify-between">
-              <div className="flex-1">
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex items-start gap-4 flex-1 min-w-0">
+                <div className="h-20 w-32 shrink-0 overflow-hidden rounded-lg bg-gray-200 dark:bg-gray-700">
+                  {(proj.image || (Array.isArray(proj.images) ? proj.images[0] : '')) ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={proj.image || proj.images?.[0]}
+                      alt={`${proj.title} preview`}
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    <div className="flex h-full w-full items-center justify-center text-xs text-gray-500 dark:text-gray-400">
+                      No image
+                    </div>
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
                 <h3 className="font-bold text-gray-900 dark:text-white">{proj.title}</h3>
                 <p className="text-sm text-gray-600 dark:text-gray-400">{proj.description}</p>
+                <p className="mt-1 text-xs font-medium text-amber-500 dark:text-amber-400">
+                  Review: {Number(proj.rating ?? 3.3).toFixed(1)} / 5.0
+                </p>
+                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                  Images: {Array.isArray(proj.images) && proj.images.length > 0 ? proj.images.length : proj.image ? 1 : 0}
+                </p>
                 <div className="mt-2 flex flex-wrap gap-1">
                   {(Array.isArray(proj.tags)
                     ? proj.tags
@@ -735,6 +1040,7 @@ function ProjectsManager() {
                     </span>
                   ))}
                 </div>
+                </div>
               </div>
               <div className="flex gap-2 ml-4">
                 <button
@@ -742,8 +1048,15 @@ function ProjectsManager() {
                   onClick={() => {
                     setFormData({
                       ...proj,
+                      rating: Number(proj.rating ?? 3.3),
                       tags: Array.isArray(proj.tags) ? proj.tags.join(', ') : proj.tags,
+                      images: Array.isArray(proj.images)
+                        ? proj.images
+                        : proj.image
+                          ? [String(proj.image)]
+                          : [],
                     });
+                    setNewImageUrl('');
                     setEditingId(proj.id);
                     setShowForm(true);
                   }}
@@ -820,7 +1133,7 @@ function SkillsManager() {
 
   const handleSave = () => {
     if (!formData.name) {
-      alert('Please enter skill name');
+      showAdminAlert('Please enter skill name', 'warning');
       return;
     }
 
@@ -871,35 +1184,37 @@ function SkillsManager() {
       </div>
 
       {formOpen && (
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="rounded-lg bg-white p-6 shadow dark:bg-gray-800"
+      <AdminEditModal
+        open={formOpen}
+        onClose={resetForm}
+        title={editingId ? 'Edit Skill' : 'New Skill'}
       >
-        <h2 className="mb-4 text-xl font-bold text-gray-900 dark:text-white">
-          {editingId ? 'Edit skill' : 'New skill'}
-        </h2>
-
         <div className="grid gap-4 md:grid-cols-2">
-          <input
-            type="text"
-            placeholder="Skill Name"
-            value={formData.name}
-            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-            className="rounded-lg border border-gray-300 px-4 py-2 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
-          />
-          <select
-            value={formData.category}
-            onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-            className="rounded-lg border border-gray-300 px-4 py-2 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
-          >
-            <option>Frontend</option>
-            <option>Backend</option>
-            <option>Tools</option>
-          </select>
+          <div>
+            <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Skill Name</label>
+            <input
+              type="text"
+              placeholder="Skill Name"
+              value={formData.name}
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              className="w-full rounded-lg border border-gray-300 px-4 py-2 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+            />
+          </div>
+          <div>
+            <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Category</label>
+            <select
+              value={formData.category}
+              onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+              className="w-full rounded-lg border border-gray-300 px-4 py-2 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+            >
+              <option>Frontend</option>
+              <option>Backend</option>
+              <option>Tools</option>
+            </select>
+          </div>
           <div className="col-span-1 md:col-span-2">
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Proficiency: {formData.proficiency}%
+              Proficiency Percentage: {formData.proficiency}%
             </label>
             <input
               type="range"
@@ -929,7 +1244,7 @@ function SkillsManager() {
             Cancel
           </button>
         </div>
-      </motion.div>
+      </AdminEditModal>
       )}
 
       {['Frontend', 'Backend', 'Tools'].map((cat) => (
@@ -943,7 +1258,7 @@ function SkillsManager() {
                   key={skill.id}
                   initial={{ opacity: 0, scale: 0.95 }}
                   animate={{ opacity: 1, scale: 1 }}
-                  className="rounded-lg bg-white p-4 shadow dark:bg-gray-800"
+                  className="rounded-lg bg-gray-100 p-4 shadow dark:bg-gray-800"
                 >
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
@@ -1061,7 +1376,7 @@ function ArticlesManager() {
 
   const handleSave = () => {
     if (!formData.title || !formData.content) {
-      alert('Please fill in title and content');
+      showAdminAlert('Please fill in title and content', 'warning');
       return;
     }
 
@@ -1127,82 +1442,111 @@ function ArticlesManager() {
       </div>
 
       {formOpen && (
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="rounded-lg bg-white p-6 shadow dark:bg-gray-800"
+      <AdminEditModal
+        open={formOpen}
+        onClose={resetForm}
+        title={editingId ? 'Edit Article' : 'New Article'}
       >
-        <h2 className="mb-4 text-xl font-bold text-gray-900 dark:text-white">
-          {editingId ? 'Edit article' : 'New article'}
-        </h2>
-
         <div className="grid gap-4">
           {editingId ? (
-            <input
-              type="text"
-              readOnly
-              title="URL slug"
-              value={formData.slug}
-              className="rounded-lg border border-gray-200 bg-gray-50 px-4 py-2 text-sm dark:border-gray-600 dark:bg-gray-900 dark:text-gray-400"
-            />
+            <div>
+              <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">URL Slug</label>
+              <input
+                type="text"
+                readOnly
+                title="URL slug"
+                value={formData.slug}
+                className="w-full rounded-lg border border-gray-200 bg-gray-50 px-4 py-2 text-sm dark:border-gray-600 dark:bg-gray-900 dark:text-gray-400"
+              />
+            </div>
           ) : null}
-          <input
-            type="text"
-            placeholder="Article Title"
-            value={formData.title}
-            onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-            className="rounded-lg border border-gray-300 px-4 py-2 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
-          />
-          <textarea
-            placeholder="Article Excerpt"
-            value={formData.excerpt}
-            onChange={(e) => setFormData({ ...formData, excerpt: e.target.value })}
-            className="rounded-lg border border-gray-300 px-4 py-2 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
-            rows={2}
-          />
-          <div className="grid gap-4 md:grid-cols-2">
+          <div>
+            <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Article Title</label>
             <input
               type="text"
-              placeholder="Category"
-              value={formData.category}
-              onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-              className="rounded-lg border border-gray-300 px-4 py-2 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
-            />
-            <input
-              type="date"
-              value={formData.publishedAt}
-              onChange={(e) => setFormData({ ...formData, publishedAt: e.target.value })}
-              className="rounded-lg border border-gray-300 px-4 py-2 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
-            />
-            <input
-              type="number"
-              placeholder="Read Time (minutes)"
-              value={formData.readTime}
-              onChange={(e) => setFormData({ ...formData, readTime: parseInt(e.target.value) })}
-              className="rounded-lg border border-gray-300 px-4 py-2 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
-            />
-            <input
-              type="url"
-              placeholder="Cover Image URL"
-              value={formData.coverImage}
-              onChange={(e) => setFormData({ ...formData, coverImage: e.target.value })}
-              className="rounded-lg border border-gray-300 px-4 py-2 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+              placeholder="Article Title"
+              value={formData.title}
+              onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+              className="w-full rounded-lg border border-gray-300 px-4 py-2 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
             />
           </div>
-          <input
-            type="text"
-            placeholder="Tags (comma separated)"
-            value={formData.tags}
-            onChange={(e) => setFormData({ ...formData, tags: e.target.value })}
-            className="rounded-lg border border-gray-300 px-4 py-2 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
-          />
-          <textarea
-            placeholder="Article Content (supports markdown)"
-            value={formData.content}
-            onChange={(e) => setFormData({ ...formData, content: e.target.value })}
-            className="rounded-lg border border-gray-300 px-4 py-2 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
-            rows={6}
-          />
+          <div>
+            <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Article Excerpt</label>
+            <textarea
+              placeholder="Article Excerpt"
+              value={formData.excerpt}
+              onChange={(e) => setFormData({ ...formData, excerpt: e.target.value })}
+              className="w-full rounded-lg border border-gray-300 px-4 py-2 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+              rows={2}
+            />
+          </div>
+          <div className="grid gap-4 md:grid-cols-2">
+            <div>
+              <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Category</label>
+              <input
+                type="text"
+                placeholder="Category"
+                value={formData.category}
+                onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                className="w-full rounded-lg border border-gray-300 px-4 py-2 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Publish Date</label>
+              <input
+                type="date"
+                value={formData.publishedAt}
+                onChange={(e) => setFormData({ ...formData, publishedAt: e.target.value })}
+                className="w-full rounded-lg border border-gray-300 px-4 py-2 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                Read Time (minutes)
+              </label>
+              <input
+                type="number"
+                placeholder="Read Time (minutes)"
+                value={formData.readTime}
+                onChange={(e) => setFormData({ ...formData, readTime: parseInt(e.target.value) })}
+                className="w-full rounded-lg border border-gray-300 px-4 py-2 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Cover Image URL</label>
+              <input
+                type="url"
+                placeholder="Cover Image URL"
+                value={formData.coverImage}
+                onChange={(e) => setFormData({ ...formData, coverImage: e.target.value })}
+                className="w-full rounded-lg border border-gray-300 px-4 py-2 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+              />
+            </div>
+          </div>
+          <div>
+            <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+              Tags (comma separated)
+            </label>
+            <input
+              type="text"
+              placeholder="Tags (comma separated)"
+              value={formData.tags}
+              onChange={(e) => setFormData({ ...formData, tags: e.target.value })}
+              className="w-full rounded-lg border border-gray-300 px-4 py-2 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+            />
+          </div>
+          <div>
+            <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+              Article Content (Markdown)
+            </label>
+            <textarea
+              placeholder="Article Content (supports markdown)"
+              value={formData.content}
+              onChange={(e) => setFormData({ ...formData, content: e.target.value })}
+              className="w-full rounded-lg border border-gray-300 px-4 py-2 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+              rows={6}
+            />
+          </div>
         </div>
 
         <div className="mt-4 flex gap-2">
@@ -1222,7 +1566,7 @@ function ArticlesManager() {
             Cancel
           </button>
         </div>
-      </motion.div>
+      </AdminEditModal>
       )}
 
       <div className="space-y-3">
@@ -1231,7 +1575,7 @@ function ArticlesManager() {
             key={article.id}
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
-            className="rounded-lg bg-white p-4 shadow dark:bg-gray-800"
+            className="rounded-lg bg-gray-100 p-4 shadow dark:bg-gray-800"
           >
             <div className="flex items-start justify-between">
               <div className="flex-1">
@@ -1334,7 +1678,7 @@ function TestimonialsManager() {
 
   const handleSave = () => {
     if (!formData.name || !formData.quote) {
-      alert('Please fill in name and quote');
+      showAdminAlert('Please fill in name and quote', 'warning');
       return;
     }
 
@@ -1387,51 +1731,62 @@ function TestimonialsManager() {
       </div>
 
       {formOpen && (
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="rounded-lg bg-white p-6 shadow dark:bg-gray-800"
+      <AdminEditModal
+        open={formOpen}
+        onClose={resetForm}
+        title={editingId ? 'Edit Testimonial' : 'New Testimonial'}
       >
-        <h2 className="mb-4 text-xl font-bold text-gray-900 dark:text-white">
-          {editingId ? 'Edit testimonial' : 'New testimonial'}
-        </h2>
-
         <div className="grid gap-4 md:grid-cols-2">
-          <input
-            type="text"
-            placeholder="Person Name"
-            value={formData.name}
-            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-            className="rounded-lg border border-gray-300 px-4 py-2 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
-          />
-          <input
-            type="text"
-            placeholder="Job Role"
-            value={formData.role}
-            onChange={(e) => setFormData({ ...formData, role: e.target.value })}
-            className="rounded-lg border border-gray-300 px-4 py-2 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
-          />
-          <input
-            type="text"
-            placeholder="Company"
-            value={formData.company}
-            onChange={(e) => setFormData({ ...formData, company: e.target.value })}
-            className="rounded-lg border border-gray-300 px-4 py-2 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
-          />
-          <input
-            type="url"
-            placeholder="Avatar Image URL"
-            value={formData.avatar}
-            onChange={(e) => setFormData({ ...formData, avatar: e.target.value })}
-            className="rounded-lg border border-gray-300 px-4 py-2 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
-          />
-          <textarea
-            placeholder="Testimonial Quote"
-            value={formData.quote}
-            onChange={(e) => setFormData({ ...formData, quote: e.target.value })}
-            className="col-span-1 md:col-span-2 rounded-lg border border-gray-300 px-4 py-2 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
-            rows={3}
-          />
+          <div>
+            <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Person Name</label>
+            <input
+              type="text"
+              placeholder="Person Name"
+              value={formData.name}
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              className="w-full rounded-lg border border-gray-300 px-4 py-2 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+            />
+          </div>
+          <div>
+            <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Job Role</label>
+            <input
+              type="text"
+              placeholder="Job Role"
+              value={formData.role}
+              onChange={(e) => setFormData({ ...formData, role: e.target.value })}
+              className="w-full rounded-lg border border-gray-300 px-4 py-2 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+            />
+          </div>
+          <div>
+            <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Company</label>
+            <input
+              type="text"
+              placeholder="Company"
+              value={formData.company}
+              onChange={(e) => setFormData({ ...formData, company: e.target.value })}
+              className="w-full rounded-lg border border-gray-300 px-4 py-2 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+            />
+          </div>
+          <div>
+            <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Avatar Image URL</label>
+            <input
+              type="url"
+              placeholder="Avatar Image URL"
+              value={formData.avatar}
+              onChange={(e) => setFormData({ ...formData, avatar: e.target.value })}
+              className="w-full rounded-lg border border-gray-300 px-4 py-2 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+            />
+          </div>
+          <div className="col-span-1 md:col-span-2">
+            <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Testimonial Quote</label>
+            <textarea
+              placeholder="Testimonial Quote"
+              value={formData.quote}
+              onChange={(e) => setFormData({ ...formData, quote: e.target.value })}
+              className="w-full rounded-lg border border-gray-300 px-4 py-2 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+              rows={3}
+            />
+          </div>
         </div>
 
         <div className="mt-4 flex gap-2">
@@ -1451,7 +1806,7 @@ function TestimonialsManager() {
             Cancel
           </button>
         </div>
-      </motion.div>
+      </AdminEditModal>
       )}
 
       <div className="space-y-3">
@@ -1460,7 +1815,7 @@ function TestimonialsManager() {
             key={testimonial.id}
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
-            className="rounded-lg bg-white p-4 shadow dark:bg-gray-800"
+            className="rounded-lg bg-gray-100 p-4 shadow dark:bg-gray-800"
           >
             <div className="flex items-start justify-between">
               <div className="flex-1">
@@ -1506,6 +1861,27 @@ function TestimonialsManager() {
   );
 }
 
+const PROFILE_IMAGE_UPLOAD_MAX_BYTES = 8 * 1024 * 1024; // Increased limit: 8MB
+const PROFILE_IMAGE_CACHE_MAX_DATA_URL_CHARS = 1_200_000; // ~0.9MB binary when base64-encoded
+
+function estimateDataUrlBytes(dataUrl: string): number {
+  const comma = dataUrl.indexOf(',');
+  if (comma < 0) return 0;
+  const base64 = dataUrl.slice(comma + 1);
+  return Math.floor((base64.length * 3) / 4);
+}
+
+/** Browser localStorage is ~5MB; embedded base64 photos exceed it quickly. */
+function profileForLocalStorage<P extends { profileImage?: string }>(payload: P): P {
+  const img = payload.profileImage;
+  if (img && img.startsWith('data:')) {
+    // Keep smaller data URLs so the image still appears even when storage bucket is missing.
+    if (img.length <= PROFILE_IMAGE_CACHE_MAX_DATA_URL_CHARS) return payload;
+    return { ...payload, profileImage: '' };
+  }
+  return payload;
+}
+
 // Profile Manager Component
 function ProfileManager() {
   const p = emptyPortfolioData.profile;
@@ -1526,6 +1902,9 @@ function ProfileManager() {
   });
   const [photoMode, setPhotoMode] = useState<'upload' | 'url'>('upload');
   const [isLoading, setIsLoading] = useState(true);
+  const [photoWarning, setPhotoWarning] = useState('');
+  const [photoUploadRejected, setPhotoUploadRejected] = useState(false);
+  const [showProfileEditor, setShowProfileEditor] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -1591,13 +1970,50 @@ function ProfileManager() {
   }, []);
 
   const handleSave = async () => {
+    if (photoUploadRejected) {
+      showAdminAlert('Can not upload file', 'error');
+      return;
+    }
     const roles = profile.heroRoles.map((r) => String(r).trim()).filter(Boolean);
     const payload = {
       ...profile,
       heroRoles: roles,
       title: roles[0] ?? '',
     };
-    localStorage.setItem('portfolio_profile', JSON.stringify(payload));
+    if (payload.profileImage?.startsWith('data:')) {
+      const imageBytes = estimateDataUrlBytes(payload.profileImage);
+      if (imageBytes > PROFILE_IMAGE_UPLOAD_MAX_BYTES) {
+        const limitMb = (PROFILE_IMAGE_UPLOAD_MAX_BYTES / (1024 * 1024)).toFixed(0);
+        const actualMb = (imageBytes / (1024 * 1024)).toFixed(2);
+        const message = `Image is too large (${actualMb}MB). Max allowed is ${limitMb}MB. Please choose a smaller file.`;
+        setPhotoWarning(message);
+        setPhotoUploadRejected(true);
+        showAdminAlert(message, 'warning');
+        return;
+      }
+    }
+    setPhotoWarning('');
+    setPhotoUploadRejected(false);
+    const stored = profileForLocalStorage(payload);
+    try {
+      localStorage.setItem('portfolio_profile', JSON.stringify(stored));
+    } catch (e) {
+      const quota =
+        e instanceof DOMException &&
+        (e.name === 'QuotaExceededError' || (e as DOMException).code === 22);
+      if (quota) {
+        try {
+          localStorage.setItem(
+            'portfolio_profile',
+            JSON.stringify({ ...stored, profileImage: '' })
+          );
+        } catch {
+          console.error('localStorage quota exceeded; profile not cached locally');
+        }
+      } else {
+        throw e;
+      }
+    }
     if (isSupabaseConfigured) {
       try {
         await saveProfile(payload);
@@ -1606,12 +2022,34 @@ function ProfileManager() {
       }
     }
     setProfile(payload);
-    alert('Profile updated successfully!');
+    const skippedDataUrl =
+      payload.profileImage?.startsWith('data:') && !isSupabaseConfigured;
+    showAdminAlert(
+      skippedDataUrl
+        ? 'Profile saved. Uploaded photos cannot be stored in browser cache at this size. Configure Supabase Storage and save again to persist your photo, or use an image URL.'
+        : 'Profile updated successfully!',
+      skippedDataUrl ? 'warning' : 'success'
+    );
+    setShowProfileEditor(false);
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    if (file.size > PROFILE_IMAGE_UPLOAD_MAX_BYTES) {
+      const limitMb = (PROFILE_IMAGE_UPLOAD_MAX_BYTES / (1024 * 1024)).toFixed(0);
+      const actualMb = (file.size / (1024 * 1024)).toFixed(2);
+      const message = `Image is too large (${actualMb}MB). Max allowed is ${limitMb}MB. Please choose a smaller file.`;
+      setPhotoWarning(message);
+      setPhotoUploadRejected(true);
+      // Immediate rejection: clear selected file and preview.
+      setProfile(prev => ({ ...prev, profileImage: '' }));
+      e.currentTarget.value = '';
+      showAdminAlert(message, 'warning');
+      return;
+    }
+    setPhotoWarning('');
+    setPhotoUploadRejected(false);
     const reader = new FileReader();
     reader.onload = () => setProfile(prev => ({ ...prev, profileImage: reader.result as string }));
     reader.readAsDataURL(file);
@@ -1622,18 +2060,46 @@ function ProfileManager() {
   if (isLoading) return <AdminLoading />;
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="max-w-2xl rounded-lg bg-white p-6 shadow dark:bg-gray-800"
-    >
-      <h2 className="mb-6 text-2xl font-bold text-gray-900 dark:text-white">Profile Settings</h2>
-      <p className="mb-4 text-xs text-gray-500 dark:text-gray-400">
-        {isSupabaseConfigured
-          ? 'Loaded from Supabase. Save writes to your database and this browser.'
-          : 'Configure Supabase URL in .env to load profile from the database.'}
-      </p>
+    <>
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="max-w-2xl rounded-lg bg-gray-100 p-6 shadow dark:bg-gray-800"
+      >
+        <h2 className="mb-2 text-2xl font-bold text-gray-900 dark:text-white">Profile Settings</h2>
+        <p className="mb-4 text-xs text-gray-500 dark:text-gray-400">
+          {isSupabaseConfigured
+            ? 'Loaded from Supabase. Save writes to your database and this browser.'
+            : 'Configure Supabase URL in .env to load profile from the database.'}
+        </p>
+        <div className="flex items-center justify-between rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-900/40">
+          <div className="flex items-center gap-3">
+            <div className="h-12 w-12 overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700">
+              {currentPhoto ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={currentPhoto} alt="Profile preview" className="h-full w-full object-cover" />
+              ) : null}
+            </div>
+            <div>
+              <p className="font-medium text-gray-900 dark:text-white">{profile.name || 'Unnamed profile'}</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400">{profile.email || 'No email set'}</p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => setShowProfileEditor(true)}
+            className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+          >
+            Edit Profile
+          </button>
+        </div>
+      </motion.div>
 
+      <AdminEditModal
+        open={showProfileEditor}
+        onClose={() => setShowProfileEditor(false)}
+        title="Edit Profile"
+      >
       <div className="space-y-4">
         {/* Photo */}
         <div>
@@ -1642,7 +2108,7 @@ function ProfileManager() {
           </label>
           <div className="flex flex-col items-center gap-4 rounded-lg border border-dashed border-gray-300 p-6 dark:border-gray-600 sm:flex-row sm:items-start">
             {/* Preview */}
-            <div className="relative flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-full bg-gray-200 ring-2 ring-blue-500 dark:bg-gray-600">
+            <div className="relative flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-full bg-gray-200 ring-2 ring-gray-300 dark:bg-gray-600 dark:ring-gray-500">
               {currentPhoto ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img src={currentPhoto} alt="Profile preview" className="h-full w-full object-cover" />
@@ -1652,6 +2118,9 @@ function ProfileManager() {
             </div>
             {/* Controls */}
             <div className="flex-1 space-y-3">
+              <p className="text-xs text-gray-500 dark:text-gray-400">
+                Max upload size: {(PROFILE_IMAGE_UPLOAD_MAX_BYTES / (1024 * 1024)).toFixed(0)}MB
+              </p>
               <div className="flex gap-2">
                 <button
                   type="button"
@@ -1682,11 +2151,14 @@ function ProfileManager() {
                 <input
                   type="url"
                   placeholder="https://example.com/photo.jpg"
-                  value={profile.profileImage?.startsWith('data:') ? '' : profile.profileImage}
+                  value={profile.profileImage?.startsWith('data:') ? '' : (profile.profileImage ?? '')}
                   onChange={(e) => setProfile(prev => ({ ...prev, profileImage: e.target.value }))}
                   className="w-full rounded-lg border border-gray-300 px-4 py-2 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white"
                 />
               )}
+              {photoWarning ? (
+                <p className="text-xs text-amber-600 dark:text-amber-400">{photoWarning}</p>
+              ) : null}
               {profile.profileImage && (
                 <button
                   type="button"
@@ -1699,13 +2171,16 @@ function ProfileManager() {
             </div>
           </div>
         </div>
-        <input
-          type="text"
-          placeholder="Full Name"
-          value={profile.name}
-          onChange={(e) => setProfile({ ...profile, name: e.target.value })}
-          className="w-full rounded-lg border border-gray-300 px-4 py-2 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
-        />
+        <div>
+          <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Full Name</label>
+          <input
+            type="text"
+            placeholder="Full Name"
+            value={profile.name}
+            onChange={(e) => setProfile({ ...profile, name: e.target.value })}
+            className="w-full rounded-lg border border-gray-300 px-4 py-2 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+          />
+        </div>
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
             Hero roles (shown one at a time, in order, then repeat)
@@ -1796,27 +2271,36 @@ function ProfileManager() {
             The hero cycles through each line: types in, pauses, deletes, then shows the next.
           </p>
         </div>
-        <input
-          type="email"
-          placeholder="Email Address"
-          value={profile.email}
-          onChange={(e) => setProfile({ ...profile, email: e.target.value })}
-          className="w-full rounded-lg border border-gray-300 px-4 py-2 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
-        />
-        <input
-          type="text"
-          placeholder="Location"
-          value={profile.location}
-          onChange={(e) => setProfile({ ...profile, location: e.target.value })}
-          className="w-full rounded-lg border border-gray-300 px-4 py-2 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
-        />
-        <textarea
-          placeholder="Bio"
-          value={profile.bio}
-          onChange={(e) => setProfile({ ...profile, bio: e.target.value })}
-          className="w-full rounded-lg border border-gray-300 px-4 py-2 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
-          rows={4}
-        />
+        <div>
+          <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Email Address</label>
+          <input
+            type="email"
+            placeholder="Email Address"
+            value={profile.email}
+            onChange={(e) => setProfile({ ...profile, email: e.target.value })}
+            className="w-full rounded-lg border border-gray-300 px-4 py-2 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+          />
+        </div>
+        <div>
+          <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Location</label>
+          <input
+            type="text"
+            placeholder="Location"
+            value={profile.location}
+            onChange={(e) => setProfile({ ...profile, location: e.target.value })}
+            className="w-full rounded-lg border border-gray-300 px-4 py-2 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+          />
+        </div>
+        <div>
+          <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Bio</label>
+          <textarea
+            placeholder="Bio"
+            value={profile.bio}
+            onChange={(e) => setProfile({ ...profile, bio: e.target.value })}
+            className="w-full rounded-lg border border-gray-300 px-4 py-2 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+            rows={4}
+          />
+        </div>
 
         <div className="grid gap-4 md:grid-cols-2">
           <div>
@@ -1873,6 +2357,7 @@ function ProfileManager() {
           Save Profile Changes
         </button>
       </div>
-    </motion.div>
+      </AdminEditModal>
+    </>
   );
 }

@@ -19,14 +19,14 @@ export default function AboutSection() {
 
   if (isLoading) {
     return (
-      <section id="about" className="bg-white py-16 dark:bg-gray-900">
-        <div className="section-container py-12 text-center text-gray-500 dark:text-gray-400">Loading…</div>
+      <section id="about" className="bg-sky-50 py-16 dark:bg-transparent">
+        <div className="section-container py-12 text-center text-gray-500 dark:text-slate-portfolio">Loading…</div>
       </section>
     );
   }
 
   return (
-    <section id="about" className="bg-white py-16 dark:bg-gray-900">
+    <section id="about" className="bg-sky-50 py-16 dark:bg-transparent">
       <div className="section-container">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -35,10 +35,8 @@ export default function AboutSection() {
           viewport={{ once: true }}
           className="mb-12 text-center"
         >
-          <h2 className="mb-4 text-3xl font-bold text-gray-900 dark:text-white sm:text-4xl">
-            About Me
-          </h2>
-          <div className="mx-auto h-1 w-16 bg-gradient-to-r from-blue-400 to-purple-500"></div>
+          <h2 className="portfolio-section-title text-center sm:text-left">About Me</h2>
+          <div className="mx-auto h-1 w-16 bg-gradient-to-r from-teal-400 to-sky-500 dark:from-mint dark:to-pink-300 sm:mx-0"></div>
         </motion.div>
 
         <div className="grid gap-12 lg:grid-cols-2">
@@ -50,7 +48,7 @@ export default function AboutSection() {
             viewport={{ once: true }}
           >
             {profile.bio ? (
-              <p className="mb-6 text-lg leading-relaxed text-gray-600 dark:text-gray-300">
+              <p className="mb-6 text-lg leading-relaxed text-gray-600 dark:text-slate-portfolio">
                 {profile.bio}
               </p>
             ) : null}
@@ -58,14 +56,14 @@ export default function AboutSection() {
             {/* Contact Info */}
             <div className="space-y-3">
               <div className="flex items-center gap-3">
-                <MapPin size={20} className="text-blue-600 dark:text-blue-400" />
-                <span className="text-gray-700 dark:text-gray-300">{profile.location}</span>
+                <MapPin size={20} className="text-teal-600 dark:text-mint" />
+                <span className="text-gray-700 dark:text-slate-heading">{profile.location}</span>
               </div>
               <div className="flex items-center gap-3">
-                <Mail size={20} className="text-blue-600 dark:text-blue-400" />
+                <Mail size={20} className="text-teal-600 dark:text-mint" />
                 <a
                   href={profile.email ? `mailto:${profile.email}` : "#about"}
-                  className="text-blue-600 hover:underline dark:text-blue-400"
+                  className="text-teal-600 hover:underline dark:text-mint"
                 >
                   {profile.email || "—"}
                 </a>
@@ -114,12 +112,12 @@ export default function AboutSection() {
                 initial="hidden"
                 whileInView="visible"
                 viewport={{ once: true }}
-                className="rounded-lg bg-gradient-to-br from-blue-50 to-purple-50 p-6 dark:from-blue-900/20 dark:to-purple-900/20"
+                className="rounded-lg border border-sky-100 bg-gradient-to-br from-sky-50 to-teal-50 p-6 dark:border-navy-border dark:from-navy-muted/80 dark:to-navy-muted/40"
               >
-                <div className="mb-2 text-3xl font-bold text-blue-600 dark:text-blue-400">
+                <div className="mb-2 text-3xl font-bold text-teal-600 dark:text-mint">
                   {stat.value}+
                 </div>
-                <div className="text-sm text-gray-600 dark:text-gray-400">{stat.label}</div>
+                <div className="text-sm text-gray-600 dark:text-slate-portfolio">{stat.label}</div>
               </motion.div>
             ))}
           </motion.div>

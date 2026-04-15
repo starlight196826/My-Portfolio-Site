@@ -49,8 +49,8 @@ export default function ContactSection() {
 
   if (isLoading) {
     return (
-      <section id="contact" className="bg-white py-16 dark:bg-gray-900">
-        <div className="section-container py-12 text-center text-gray-500 dark:text-gray-400">
+      <section id="contact" className="bg-sky-50 py-16 dark:bg-transparent">
+        <div className="section-container py-12 text-center text-gray-500 dark:text-slate-portfolio">
           Loading…
         </div>
       </section>
@@ -58,7 +58,7 @@ export default function ContactSection() {
   }
 
   return (
-    <section id="contact" className="bg-white py-16 dark:bg-gray-900">
+    <section id="contact" className="bg-sky-50 py-16 dark:bg-transparent">
       <div className="section-container">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -67,10 +67,8 @@ export default function ContactSection() {
           viewport={{ once: true }}
           className="mb-12 text-center"
         >
-          <h2 className="mb-4 text-3xl font-bold text-gray-900 dark:text-white sm:text-4xl">
-            Get In Touch
-          </h2>
-          <div className="mx-auto h-1 w-16 bg-gradient-to-r from-blue-400 to-purple-500"></div>
+          <h2 className="portfolio-section-title">Get In Touch</h2>
+          <div className="mx-auto h-1 w-16 bg-gradient-to-r from-teal-400 to-sky-500 dark:from-mint dark:to-pink-300"></div>
         </motion.div>
 
         <div className="grid gap-12 lg:grid-cols-2">
@@ -81,21 +79,21 @@ export default function ContactSection() {
             transition={{ duration: 0.6 }}
             viewport={{ once: true }}
           >
-            <p className="mb-8 text-lg text-gray-600 dark:text-gray-400">
+            <p className="mb-8 text-lg text-gray-600 dark:text-slate-portfolio">
               Have a question or want to work together? I'd love to hear from you. Feel free to reach out!
             </p>
 
             <div className="space-y-6">
               {/* Email */}
               <div className="flex gap-4">
-                <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-blue-100 dark:bg-blue-900/20">
-                  <Mail size={24} className="text-blue-600 dark:text-blue-400" />
+                <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-teal-100 dark:bg-mint/10">
+                  <Mail size={24} className="text-teal-600 dark:text-mint" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-gray-900 dark:text-white">Email</h3>
+                  <h3 className="font-semibold text-gray-900 dark:text-slate-heading">Email</h3>
                   <a
                     href={profile.email ? `mailto:${profile.email}` : "#contact"}
-                    className="text-blue-600 hover:underline dark:text-blue-400"
+                    className="text-teal-600 hover:underline dark:text-mint"
                   >
                     {profile.email || "—"}
                   </a>
@@ -104,23 +102,23 @@ export default function ContactSection() {
 
               {/* Location */}
               <div className="flex gap-4">
-                <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-blue-100 dark:bg-blue-900/20">
-                  <MapPin size={24} className="text-blue-600 dark:text-blue-400" />
+                <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-teal-100 dark:bg-mint/10">
+                  <MapPin size={24} className="text-teal-600 dark:text-mint" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-gray-900 dark:text-white">Location</h3>
-                  <p className="text-gray-600 dark:text-gray-400">{profile.location}</p>
+                  <h3 className="font-semibold text-gray-900 dark:text-slate-heading">Location</h3>
+                  <p className="text-gray-600 dark:text-slate-portfolio">{profile.location}</p>
                 </div>
               </div>
 
               {/* Availability */}
               <div className="flex gap-4">
-                <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-blue-100 dark:bg-blue-900/20">
-                  <Phone size={24} className="text-blue-600 dark:text-blue-400" />
+                <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-teal-100 dark:bg-mint/10">
+                  <Phone size={24} className="text-teal-600 dark:text-mint" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-gray-900 dark:text-white">Availability</h3>
-                  <p className="text-gray-600 dark:text-gray-400">Open to opportunities</p>
+                  <h3 className="font-semibold text-gray-900 dark:text-slate-heading">Availability</h3>
+                  <p className="text-gray-600 dark:text-slate-portfolio">Open to opportunities</p>
                 </div>
               </div>
             </div>
@@ -148,14 +146,14 @@ export default function ContactSection() {
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
               {/* Name */}
               <div>
-                <label className="mb-2 block text-sm font-medium text-gray-900 dark:text-white">
+                <label className="mb-2 block text-sm font-medium text-gray-900 dark:text-slate-heading">
                   Name
                 </label>
                 <input
                   {...register("name", { required: "Name is required" })}
                   type="text"
                   placeholder="Your name"
-                  className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2 text-gray-900 placeholder-gray-500 focus:border-blue-500 focus:outline-none dark:border-gray-600 dark:bg-gray-800 dark:text-white dark:placeholder-gray-400"
+                  className="w-full rounded-lg border border-sky-200 bg-sky-50 px-4 py-2 text-gray-900 placeholder-gray-500 focus:border-teal-500 focus:outline-none dark:border-navy-border dark:bg-navy-muted dark:text-slate-heading dark:placeholder-slate-portfolio"
                 />
                 {errors.name && (
                   <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.name.message}</p>
@@ -164,7 +162,7 @@ export default function ContactSection() {
 
               {/* Email */}
               <div>
-                <label className="mb-2 block text-sm font-medium text-gray-900 dark:text-white">
+                <label className="mb-2 block text-sm font-medium text-gray-900 dark:text-slate-heading">
                   Email
                 </label>
                 <input
@@ -177,7 +175,7 @@ export default function ContactSection() {
                   })}
                   type="email"
                   placeholder="you@example.com"
-                  className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2 text-gray-900 placeholder-gray-500 focus:border-blue-500 focus:outline-none dark:border-gray-600 dark:bg-gray-800 dark:text-white dark:placeholder-gray-400"
+                  className="w-full rounded-lg border border-sky-200 bg-sky-50 px-4 py-2 text-gray-900 placeholder-gray-500 focus:border-teal-500 focus:outline-none dark:border-navy-border dark:bg-navy-muted dark:text-slate-heading dark:placeholder-slate-portfolio"
                 />
                 {errors.email && (
                   <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.email.message}</p>
@@ -186,14 +184,14 @@ export default function ContactSection() {
 
               {/* Subject */}
               <div>
-                <label className="mb-2 block text-sm font-medium text-gray-900 dark:text-white">
+                <label className="mb-2 block text-sm font-medium text-gray-900 dark:text-slate-heading">
                   Subject
                 </label>
                 <input
                   {...register("subject", { required: "Subject is required" })}
                   type="text"
                   placeholder="Project inquiry"
-                  className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2 text-gray-900 placeholder-gray-500 focus:border-blue-500 focus:outline-none dark:border-gray-600 dark:bg-gray-800 dark:text-white dark:placeholder-gray-400"
+                  className="w-full rounded-lg border border-sky-200 bg-sky-50 px-4 py-2 text-gray-900 placeholder-gray-500 focus:border-teal-500 focus:outline-none dark:border-navy-border dark:bg-navy-muted dark:text-slate-heading dark:placeholder-slate-portfolio"
                 />
                 {errors.subject && (
                   <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.subject.message}</p>
@@ -202,14 +200,14 @@ export default function ContactSection() {
 
               {/* Message */}
               <div>
-                <label className="mb-2 block text-sm font-medium text-gray-900 dark:text-white">
+                <label className="mb-2 block text-sm font-medium text-gray-900 dark:text-slate-heading">
                   Message
                 </label>
                 <textarea
                   {...register("message", { required: "Message is required" })}
                   placeholder="Your message here..."
                   rows={4}
-                  className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2 text-gray-900 placeholder-gray-500 focus:border-blue-500 focus:outline-none dark:border-gray-600 dark:bg-gray-800 dark:text-white dark:placeholder-gray-400"
+                  className="w-full rounded-lg border border-sky-200 bg-sky-50 px-4 py-2 text-gray-900 placeholder-gray-500 focus:border-teal-500 focus:outline-none dark:border-navy-border dark:bg-navy-muted dark:text-slate-heading dark:placeholder-slate-portfolio"
                 ></textarea>
                 {errors.message && (
                   <p className="mt-1 text-sm text-red-600 dark:text-red-400">

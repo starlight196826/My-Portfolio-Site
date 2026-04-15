@@ -24,8 +24,8 @@ export default function TestimonialsSection() {
 
   if (isLoading) {
     return (
-      <section id="testimonials" className="bg-gray-50 py-16 dark:bg-gray-950">
-        <div className="section-container py-12 text-center text-gray-500 dark:text-gray-400">Loading…</div>
+      <section id="testimonials" className="bg-sky-50 py-16 dark:bg-transparent">
+        <div className="section-container py-12 text-center text-gray-500 dark:text-slate-portfolio">Loading…</div>
       </section>
     );
   }
@@ -50,7 +50,7 @@ export default function TestimonialsSection() {
   };
 
   return (
-    <section id="testimonials" className="bg-gray-50 py-16 dark:bg-gray-950">
+    <section id="testimonials" className="bg-sky-50 py-16 dark:bg-transparent">
       <div className="section-container">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -59,10 +59,8 @@ export default function TestimonialsSection() {
           viewport={{ once: true }}
           className="mb-12 text-center"
         >
-          <h2 className="mb-4 text-3xl font-bold text-gray-900 dark:text-white sm:text-4xl">
-            What People Say
-          </h2>
-          <div className="mx-auto h-1 w-16 bg-gradient-to-r from-blue-400 to-purple-500"></div>
+          <h2 className="portfolio-section-title">What People Say</h2>
+          <div className="mx-auto h-1 w-16 bg-gradient-to-r from-teal-400 to-sky-500 dark:from-mint dark:to-pink-300"></div>
         </motion.div>
 
         {/* Carousel */}
@@ -82,13 +80,13 @@ export default function TestimonialsSection() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.5 }}
-            className="rounded-lg bg-white p-8 shadow-lg dark:bg-gray-900"
+            className="rounded-lg border border-sky-100 bg-sky-50/80 p-8 shadow-lg dark:border-navy-border dark:bg-navy-muted"
           >
             {/* Quote icon */}
-            <Quote className="mb-4 text-blue-600 dark:text-blue-400" size={32} />
+            <Quote className="mb-4 text-teal-600 dark:text-mint" size={32} />
 
             {/* Quote */}
-            <p className="mb-8 text-lg text-gray-700 dark:text-gray-300">
+            <p className="mb-8 text-lg text-gray-700 dark:text-slate-portfolio">
               "{testimonials[currentIndex]?.quote || ''}"
             </p>
 
@@ -104,10 +102,10 @@ export default function TestimonialsSection() {
                 />
               </div>
               <div>
-                <p className="font-semibold text-gray-900 dark:text-white">
+                <p className="font-semibold text-gray-900 dark:text-slate-heading">
                   {testimonials[currentIndex]?.name || ''}
                 </p>
-                <p className="text-sm text-gray-600 dark:text-gray-400">
+                <p className="text-sm text-gray-600 dark:text-slate-portfolio">
                   {testimonials[currentIndex]?.role || ''} at {testimonials[currentIndex]?.company || ''}
                 </p>
               </div>
@@ -117,7 +115,7 @@ export default function TestimonialsSection() {
           {/* Navigation Buttons */}
           <button
             onClick={goToPrevious}
-            className="absolute left-0 top-1/2 -translate-x-12 -translate-y-1/2 rounded-lg bg-blue-600 p-2 text-white transition-all hover:bg-blue-700 active:scale-95"
+            className="absolute left-0 top-1/2 -translate-x-12 -translate-y-1/2 rounded-lg bg-teal-500 p-2 text-white transition-all hover:bg-teal-600 active:scale-95 dark:bg-mint dark:text-navy dark:hover:opacity-90"
             aria-label="Previous testimonial"
           >
             <ChevronLeft size={24} />
@@ -125,7 +123,7 @@ export default function TestimonialsSection() {
 
           <button
             onClick={goToNext}
-            className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-12 rounded-lg bg-blue-600 p-2 text-white transition-all hover:bg-blue-700 active:scale-95"
+            className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-12 rounded-lg bg-teal-500 p-2 text-white transition-all hover:bg-teal-600 active:scale-95 dark:bg-mint dark:text-navy dark:hover:opacity-90"
             aria-label="Next testimonial"
           >
             <ChevronRight size={24} />
@@ -139,8 +137,8 @@ export default function TestimonialsSection() {
                 onClick={() => goToSlide(index)}
                 className={`h-2 rounded-full transition-all ${
                   index === currentIndex
-                    ? "w-8 bg-blue-600"
-                    : "w-2 bg-gray-300 hover:bg-gray-400 dark:bg-gray-600 dark:hover:bg-gray-500"
+                    ? "w-8 bg-teal-500 dark:bg-mint"
+                    : "w-2 bg-gray-300 hover:bg-gray-400 dark:bg-navy-border dark:hover:bg-slate-portfolio"
                 }`}
                 aria-label={`Go to testimonial ${index + 1}`}
               />

@@ -11,7 +11,13 @@ import Footer from "@/components/portfolio/Footer";
 
 export default function Home() {
   return (
-    <main className="min-h-screen bg-white dark:bg-gray-950">
+    <main className="relative z-0 min-h-screen bg-sky-50 dark:bg-navy">
+      {/* Reference-style: deep navy + radial wash + subtle dot grid (dark only) */}
+      <div aria-hidden className="pointer-events-none fixed inset-0 -z-10 hidden dark:block">
+        <div className="absolute inset-0 bg-navy" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,#1A2942,#0A192F)] opacity-50" />
+        <div className="absolute inset-0 bg-grid-dots opacity-[0.05]" />
+      </div>
       <Navbar />
       <HeroSection />
       <AboutSection />

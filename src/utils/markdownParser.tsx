@@ -22,7 +22,7 @@ export function markdownToJSX(markdown: string): React.ReactNode[] {
       nodes.push(
         <h1
           key={key++}
-          className="mb-6 mt-8 text-3xl font-bold text-gray-900 dark:text-white"
+          className="mb-6 mt-8 text-3xl font-bold text-gray-800 dark:text-slate-heading"
         >
           {parseInline(line.substring(2))}
         </h1>
@@ -32,7 +32,7 @@ export function markdownToJSX(markdown: string): React.ReactNode[] {
       nodes.push(
         <h2
           key={key++}
-          className="mb-4 mt-6 text-2xl font-bold text-gray-900 dark:text-white"
+          className="mb-4 mt-6 text-2xl font-bold text-gray-800 dark:text-slate-heading"
         >
           {parseInline(line.substring(3))}
         </h2>
@@ -42,7 +42,7 @@ export function markdownToJSX(markdown: string): React.ReactNode[] {
       nodes.push(
         <h3
           key={key++}
-          className="mb-3 mt-5 text-xl font-bold text-gray-900 dark:text-white"
+          className="mb-3 mt-5 text-xl font-bold text-gray-800 dark:text-slate-heading"
         >
           {parseInline(line.substring(4))}
         </h3>
@@ -61,14 +61,14 @@ export function markdownToJSX(markdown: string): React.ReactNode[] {
       }
 
       nodes.push(
-        <div key={key++} className="my-4 overflow-hidden rounded-lg">
-          <div className="flex items-center bg-gray-900 px-4 py-2 dark:bg-gray-800">
-            <span className="text-sm font-semibold text-gray-400">
+        <div key={key++} className="my-4 overflow-hidden rounded-lg border border-gray-200 dark:border-navy-border">
+          <div className="flex items-center bg-gray-100 px-4 py-2 dark:bg-gray-800">
+            <span className="text-sm font-semibold text-gray-600 dark:text-white">
               {language}
             </span>
           </div>
-          <pre className="overflow-x-auto bg-gray-50 p-4 text-sm dark:bg-gray-900">
-            <code className="font-mono text-gray-900 dark:text-gray-100">
+          <pre className="overflow-x-auto bg-white p-4 text-sm dark:bg-gray-900">
+            <code className="font-mono text-gray-900 dark:text-white">
               {codeLines.join("\n")}
             </code>
           </pre>
@@ -104,7 +104,7 @@ export function markdownToJSX(markdown: string): React.ReactNode[] {
                   {headers.map((header, idx) => (
                     <th
                       key={idx}
-                      className="border border-gray-300 px-4 py-2 text-left font-semibold text-gray-900 dark:border-gray-600 dark:text-white"
+                      className="border border-gray-300 px-4 py-2 text-left font-semibold text-gray-800 dark:border-gray-600 dark:text-slate-heading"
                     >
                       {header}
                     </th>
@@ -117,7 +117,7 @@ export function markdownToJSX(markdown: string): React.ReactNode[] {
                     {row.map((cell, cellIdx) => (
                       <td
                         key={cellIdx}
-                        className="border border-gray-300 px-4 py-2 text-gray-700 dark:border-gray-600 dark:text-gray-300"
+                        className="border border-gray-300 px-4 py-2 text-gray-700 dark:border-gray-600 dark:text-slate-portfolio"
                       >
                         {parseInline(cell)}
                       </td>
@@ -142,7 +142,7 @@ export function markdownToJSX(markdown: string): React.ReactNode[] {
       }
 
       nodes.push(
-        <ul key={key++} className="mb-4 ml-6 list-disc space-y-2 text-gray-700 dark:text-gray-300">
+        <ul key={key++} className="mb-4 ml-6 list-disc space-y-2 text-gray-700 dark:text-white">
           {listItems.map((item, idx) => (
             <li key={idx}>{parseInline(item)}</li>
           ))}
@@ -158,7 +158,7 @@ export function markdownToJSX(markdown: string): React.ReactNode[] {
       }
 
       nodes.push(
-        <ol key={key++} className="mb-4 ml-6 list-decimal space-y-2 text-gray-700 dark:text-gray-300">
+        <ol key={key++} className="mb-4 ml-6 list-decimal space-y-2 text-gray-700 dark:text-white">
           {listItems.map((item, idx) => (
             <li key={idx}>{parseInline(item)}</li>
           ))}
@@ -168,7 +168,7 @@ export function markdownToJSX(markdown: string): React.ReactNode[] {
     // Paragraphs
     else if (line.trim()) {
       nodes.push(
-        <p key={key++} className="mb-4 text-gray-700 dark:text-gray-300">
+        <p key={key++} className="mb-4 text-gray-700 dark:text-white">
           {parseInline(line)}
         </p>
       );
@@ -233,7 +233,7 @@ function parseInline(text: string): React.ReactNode[] {
             href={match.url}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-blue-600 hover:underline dark:text-blue-400"
+            className="text-teal-600 hover:underline dark:text-mint"
           >
             {match.text}
           </a>
@@ -242,7 +242,7 @@ function parseInline(text: string): React.ReactNode[] {
         nodes.push(
           <code
             key={key++}
-            className="rounded bg-gray-100 px-2 py-1 font-mono text-sm text-gray-900 dark:bg-gray-800 dark:text-gray-100"
+            className="rounded bg-gray-100 px-2 py-1 font-mono text-sm text-gray-900 dark:bg-gray-800 dark:text-white"
           >
             {match.text}
           </code>

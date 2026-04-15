@@ -1136,3 +1136,16 @@ Choose based on your project complexity and team experience.$c$,
 -- =============================================================================
 -- End of sample data
 -- =============================================================================
+
+-- Keep projects.image_urls in sync for multi-image support.
+alter table if exists public.projects
+add column if not exists image_urls text[] not null default '{}';
+
+update public.projects
+set image_urls = case
+  when coalesce(array_length(image_urls, 1), 0) > 0 then image_urls
+  when coalesce(trim(image_url), '') <> '' then array[image_url]
+  else '{}'
+end
+where image_urls is null
+   or coalesce(array_length(image_urls, 1), 0) = 0;

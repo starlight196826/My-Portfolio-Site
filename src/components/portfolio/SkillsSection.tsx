@@ -11,14 +11,14 @@ export default function SkillsSection() {
 
   if (isLoading) {
     return (
-      <section id="skills" className="bg-white py-16 dark:bg-gray-900">
-        <div className="section-container py-12 text-center text-gray-500 dark:text-gray-400">Loading…</div>
+      <section id="skills" className="bg-sky-50 py-16 dark:bg-transparent">
+        <div className="section-container py-12 text-center text-gray-500 dark:text-slate-portfolio">Loading…</div>
       </section>
     );
   }
 
   return (
-    <section id="skills" className="bg-white py-16 dark:bg-gray-900">
+    <section id="skills" className="bg-sky-50 py-16 dark:bg-transparent">
       <div className="section-container">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -27,10 +27,8 @@ export default function SkillsSection() {
           viewport={{ once: true }}
           className="mb-12 text-center"
         >
-          <h2 className="mb-4 text-3xl font-bold text-gray-900 dark:text-white sm:text-4xl">
-            Skills & Expertise
-          </h2>
-          <div className="mx-auto h-1 w-16 bg-gradient-to-r from-blue-400 to-purple-500"></div>
+          <h2 className="portfolio-section-title">Skills &amp; Expertise</h2>
+          <div className="mx-auto h-1 w-16 bg-gradient-to-r from-teal-400 to-sky-500 dark:from-mint dark:to-pink-300"></div>
         </motion.div>
 
         <div className="grid gap-8 lg:grid-cols-3">
@@ -44,9 +42,9 @@ export default function SkillsSection() {
                 whileInView={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6 }}
                 viewport={{ once: true }}
-                className="rounded-lg bg-gradient-to-br from-blue-50 to-purple-50 p-8 dark:from-blue-900/20 dark:to-purple-900/20"
+                className="rounded-lg border border-sky-100 bg-gradient-to-br from-sky-50 to-teal-50 p-8 dark:border-navy-border dark:from-navy-muted/80 dark:to-navy-muted/40"
               >
-                <h3 className="mb-6 text-2xl font-bold text-gray-900 dark:text-white">
+                <h3 className="mb-6 font-poppins text-2xl font-bold text-gray-900 dark:text-slate-heading">
                   {category}
                 </h3>
 
@@ -54,10 +52,10 @@ export default function SkillsSection() {
                   {categorySkills.map((skill) => (
                     <div key={skill.id}>
                       <div className="mb-2 flex items-center justify-between">
-                        <span className="font-medium text-gray-900 dark:text-white">
+                        <span className="font-medium text-gray-900 dark:text-slate-heading">
                           {skill.name}
                         </span>
-                        <span className="text-sm font-semibold text-blue-600 dark:text-blue-400">
+                        <span className="text-sm font-semibold text-teal-600 dark:text-mint">
                           {skill.proficiency}%
                         </span>
                       </div>
@@ -67,10 +65,10 @@ export default function SkillsSection() {
                         transition={{ duration: 1, delay: 0.2 }}
                         viewport={{ once: true }}
                         style={{ originX: 0 }}
-                        className="h-2 w-full overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700"
+                        className="h-2 w-full overflow-hidden rounded-full bg-gray-200 dark:bg-navy-border"
                       >
                         <div
-                          className="h-full bg-gradient-to-r from-blue-500 to-purple-500"
+                          className="h-full bg-gradient-to-r from-teal-500 to-sky-500 dark:from-mint dark:to-mint-dark"
                           style={{ width: `${skill.proficiency}%` }}
                         ></div>
                       </motion.div>

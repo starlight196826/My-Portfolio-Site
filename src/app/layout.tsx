@@ -1,6 +1,20 @@
 import type { Metadata } from "next";
+import { Open_Sans, Poppins } from "next/font/google";
 import { ThemeProvider } from "next-themes";
 import "./globals.css";
+
+const openSans = Open_Sans({
+  subsets: ["latin"],
+  variable: "--font-open-sans",
+  display: "swap",
+});
+
+const poppins = Poppins({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  variable: "--font-poppins",
+  display: "swap",
+});
 
 export const metadata: Metadata = {
   title: {
@@ -30,10 +44,19 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className="scroll-smooth scroll-pt-16"
+      className={`${openSans.variable} ${poppins.variable} scroll-smooth scroll-pt-16`}
       suppressHydrationWarning
     >
-      <body className="flex min-h-screen flex-col bg-white text-gray-950 transition-colors dark:bg-gray-950 dark:text-white">
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var r=document.documentElement;var s=localStorage.getItem('theme');if(s==='dark'){r.classList.add('dark');}else if(s==='light'){r.classList.remove('dark');}else{if(window.matchMedia('(prefers-color-scheme: dark)').matches){r.classList.add('dark');}else{r.classList.remove('dark');}}}catch(e){}})();`,
+          }}
+        />
+      </head>
+      <body
+        className={`${openSans.className} flex min-h-screen flex-col bg-sky-50 text-gray-950 antialiased transition-colors selection:bg-teal-200 selection:text-gray-900 dark:bg-navy dark:text-slate-heading dark:selection:bg-mint dark:selection:text-navy`}
+      >
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           {children}
         </ThemeProvider>

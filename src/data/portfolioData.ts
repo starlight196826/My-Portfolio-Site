@@ -32,11 +32,13 @@ export interface Project {
   title: string;
   description: string;
   excerpt: string;
+  rating?: number;
   tags: string[];
   category: string;
   liveUrl: string;
   githubUrl: string;
   image: string;
+  images?: string[];
   featured?: boolean;
 }
 

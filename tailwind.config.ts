@@ -8,8 +8,25 @@ const config: Config = {
   ],
   darkMode: "class",
   theme: {
+    fontFamily: {
+      sans: ["var(--font-open-sans)", "ui-sans-serif", "system-ui", "sans-serif"],
+    },
     extend: {
       colors: {
+        /** Reference: Eric-style portfolio (navy + mint) */
+        navy: {
+          DEFAULT: "#0A192F",
+          muted: "#112240",
+          border: "#233554",
+        },
+        mint: {
+          DEFAULT: "#64FFDA",
+          dark: "#4CD6B9",
+        },
+        slate: {
+          portfolio: "#8892B0",
+          heading: "#CCD6F6",
+        },
         accent: {
           50: "#f0f9ff",
           100: "#e0f2fe",
@@ -22,6 +39,13 @@ const config: Config = {
           800: "#075985",
           900: "#0c2d6b",
         },
+      },
+      fontFamily: {
+        poppins: ["var(--font-poppins)", "system-ui", "sans-serif"],
+      },
+      backgroundImage: {
+        "grid-dots":
+          "url(\"data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cpath d='M36 18c3.314 0 6 2.686 6 6s-2.686 6-6 6-6-2.686-6-6 2.686-6 6-6' stroke='%2364FFDA' stroke-width='2'/%3E%3C/g%3E%3C/svg%3E\")",
       },
       animation: {
         "fade-in": "fadeIn 0.6s ease-out",

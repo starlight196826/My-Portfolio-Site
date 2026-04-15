@@ -33,6 +33,7 @@ create table if not exists public.projects (
   live_url text,
   github_url text,
   image_url text,
+  image_urls text[] not null default '{}',
   featured boolean default false,
   tags text[]
 );

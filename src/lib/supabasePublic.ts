@@ -4,6 +4,15 @@
 import { supabase } from '@/lib/supabase';
 import type { BlogPost, Profile } from '@/data/portfolioData';
 
+function safeProfileImageUrl(url: unknown): string {
+  const u = String(url ?? '');
+  if (!u) return '';
+  // Allow moderately sized inline fallbacks when Storage upload is blocked by RLS.
+  if (u.startsWith('data:')) return u.length <= 1_200_000 ? u : '';
+  if (u.length > 50000) return '';
+  return u;
+}
+
 function mapArticleRow(row: Record<string, unknown>): BlogPost {
   const tagsRaw = row.tags;
   const tags = Array.isArray(tagsRaw)
@@ -57,9 +66,34 @@ export async function fetchAllArticleSlugs(): Promise<string[]> {
 }
 
 export async function fetchPublicProfile(): Promise<Partial<Profile> | null> {
-  const { data, error } = await supabase.from('profile').select('*').limit(1).maybeSingle();
-  if (error || !data) return null;
-  const p = data as Record<string, unknown>;
+  const coreColumns =
+    'id, full_name, bio, email, location, years_of_experience, projects_completed, companies_worked, technologies_learned, title, hero_roles, resume_url, social_links';
+
+  const byId = await supabase.from('profile').select(coreColumns).eq('id', 1).maybeSingle();
+  let p = byId.data as Record<string, unknown> | null;
+  let error = byId.error;
+
+  if (!p && !error) {
+    const first = await supabase
+      .from('profile')
+      .select(coreColumns)
+      .order('id', { ascending: true })
+      .limit(1)
+      .maybeSingle();
+    p = first.data as Record<string, unknown> | null;
+    error = first.error;
+  }
+  if (error || !p) return null;
+
+  const image = await supabase
+    .from('profile')
+    .select('profile_image_url')
+    .eq('id', p.id)
+    .maybeSingle();
+  if (!image.error && image.data) {
+    p.profile_image_url = image.data.profile_image_url;
+  }
+
   const socialRaw = p.social_links;
   const socialLinks = Array.isArray(socialRaw) ? socialRaw : [];
 
@@ -85,7 +119,7 @@ export async function fetchPublicProfile(): Promise<Partial<Profile> | null> {
     companiesWorked: Number(p.companies_worked ?? 0),
     technologiesLearned: Number(p.technologies_learned ?? 0),
     resumeUrl: String(p.resume_url ?? ''),
-    profileImage: String(p.profile_image_url ?? ''),
+    profileImage: safeProfileImageUrl(p.profile_image_url),
     socialLinks: socialLinks as Profile['socialLinks'],
   };
 }

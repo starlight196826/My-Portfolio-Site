@@ -2,15 +2,16 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Menu, X, Moon, Sun } from "lucide-react";
+import { Menu, X, Moon, Sun, Download } from "lucide-react";
 import { useTheme } from "next-themes";
+import { usePortfolioData } from "@/hooks/usePortfolioData";
 
 const navigationLinks = [
   { href: "#home", label: "Home" },
   { href: "#about", label: "About" },
-  { href: "#experience", label: "Experience" },
   { href: "#skills", label: "Skills" },
   { href: "#projects", label: "Projects" },
+  { href: "#experience", label: "Experience" },
   { href: "#blog", label: "Blog" },
   { href: "#testimonials", label: "Testimonials" },
   { href: "#contact", label: "Contact" },
@@ -22,6 +23,10 @@ export default function Navbar() {
   const [activeSection, setActiveSection] = useState("home");
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
+  const { data } = usePortfolioData();
+  const profile = data.profile;
+  const brand = profile.name?.trim() || "Portfolio";
+  const resumeUrl = profile.resumeUrl?.trim();
 
   useEffect(() => {
     setMounted(true);
@@ -57,81 +62,113 @@ export default function Navbar() {
     setIsOpen(false);
   };
 
+  const linkClass = (id: string) =>
+    `relative py-2 text-sm font-medium transition-colors ${
+      activeSection === id
+        ? "text-teal-600 dark:text-mint"
+        : "text-gray-700 hover:text-gray-900 dark:text-slate-portfolio dark:hover:text-mint"
+    }`;
+
   return (
     <nav
       className={`fixed top-0 z-50 w-full transition-all duration-300 ${
         scrolled
-          ? "border-b border-gray-200 bg-white/80 shadow-sm backdrop-blur-md dark:border-gray-700 dark:bg-gray-950/80"
+          ? "border-b border-sky-100 bg-sky-50/85 shadow-sm backdrop-blur-md dark:border-navy-border/50 dark:bg-navy/80"
           : "bg-transparent"
       }`}
     >
       <div className="section-container flex min-h-[2.75rem] items-center justify-between py-2 sm:min-h-[3rem] sm:py-2.5">
-        {/* Logo */}
-        <Link href="/" className="text-lg font-bold tracking-tight text-gray-900 dark:text-white sm:text-xl">
-          AJ
+        <Link
+          href="/"
+          className="group relative flex items-center font-poppins text-xl font-bold tracking-tight text-gray-900 dark:text-mint"
+        >
+          <span className="relative z-10">{brand}</span>
+          <span className="absolute -bottom-1 left-0 right-0 h-0.5 origin-left scale-x-0 bg-gradient-to-r from-mint to-slate-heading transition-transform duration-300 group-hover:scale-x-100" />
         </Link>
 
-        {/* Desktop Navigation */}
-        <div className="hidden items-center gap-0.5 md:flex">
-          {navigationLinks.map((link) => (
+        <div className="hidden items-center gap-1 md:flex">
+          {navigationLinks.map((link) => {
+            const id = link.href.substring(1);
+            return (
+              <div key={link.href} className="relative px-3">
+                <a
+                  href={link.href}
+                  onClick={(e) => scrollToSection(e, link.href)}
+                  className={`group ${linkClass(id)}`}
+                >
+                  <span className="relative z-10">{link.label}</span>
+                  <span className="absolute bottom-0 left-0 h-px w-full origin-left scale-x-0 bg-mint transition-transform duration-300 group-hover:scale-x-100 dark:bg-mint" />
+                </a>
+              </div>
+            );
+          })}
+          {resumeUrl ? (
             <a
-              key={link.href}
-              href={link.href}
-              onClick={(e) => scrollToSection(e, link.href)}
-              className={`rounded-md px-2 py-1.5 text-xs font-medium transition-colors sm:px-2.5 sm:text-sm ${
-                activeSection === link.href.substring(1)
-                  ? "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-100"
-                  : "text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white"
-              }`}
+              href={resumeUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="ml-2 inline-flex items-center gap-2 rounded-md bg-gradient-to-r from-mint to-mint-dark px-5 py-2.5 text-sm font-bold text-navy transition-transform hover:scale-105 hover:shadow-lg hover:shadow-mint/20"
             >
-              {link.label}
+              <Download className="h-4 w-4" />
+              Resume
             </a>
-          ))}
+          ) : null}
         </div>
 
-        {/* Right side - Theme toggle & Mobile menu */}
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1 md:gap-2">
           {mounted && (
             <button
               type="button"
               onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-              className="rounded-md p-1.5 text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800"
+              className="rounded-md p-1.5 text-gray-700 hover:bg-sky-100 dark:text-slate-portfolio dark:hover:bg-navy-muted"
               aria-label="Toggle theme"
             >
               {theme === "dark" ? <Sun size={18} /> : <Moon size={18} />}
             </button>
           )}
 
-          {/* Mobile Menu Button */}
           <button
             type="button"
             onClick={() => setIsOpen(!isOpen)}
-            className="rounded-md p-1.5 text-gray-700 hover:bg-gray-100 md:hidden dark:text-gray-300 dark:hover:bg-gray-800"
+            className="rounded-md p-1.5 text-gray-700 hover:bg-sky-100 md:hidden dark:text-mint dark:hover:bg-navy-muted"
             aria-label="Toggle menu"
           >
-            {isOpen ? <X size={18} /> : <Menu size={18} />}
+            {isOpen ? <X size={22} /> : <Menu size={22} />}
           </button>
         </div>
       </div>
 
-      {/* Mobile Navigation */}
       {isOpen && (
-        <div className="border-t border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900 md:hidden">
-          <div className="space-y-0.5 px-4 py-2">
-            {navigationLinks.map((link) => (
+        <div className="border-t border-sky-100 bg-sky-50 dark:border-navy-border dark:bg-navy md:hidden">
+          <div className="space-y-0.5 px-4 py-3">
+            {navigationLinks.map((link) => {
+              const id = link.href.substring(1);
+              return (
+                <a
+                  key={link.href}
+                  href={link.href}
+                  onClick={(e) => scrollToSection(e, link.href)}
+                  className={`block rounded-md px-2 py-2 text-sm font-medium transition-colors ${
+                    activeSection === id
+                      ? "bg-teal-50 text-teal-700 dark:bg-navy-muted dark:text-mint"
+                      : "text-gray-700 hover:bg-sky-100 dark:text-slate-portfolio dark:hover:bg-navy-muted"
+                  }`}
+                >
+                  {link.label}
+                </a>
+              );
+            })}
+            {resumeUrl ? (
               <a
-                key={link.href}
-                href={link.href}
-                onClick={(e) => scrollToSection(e, link.href)}
-                className={`block rounded-md px-2 py-1.5 text-sm font-medium transition-colors ${
-                  activeSection === link.href.substring(1)
-                    ? "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-100"
-                    : "text-gray-700 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-800"
-                }`}
+                href={resumeUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-2 flex items-center justify-center gap-2 rounded-md bg-gradient-to-r from-mint to-mint-dark px-4 py-3 text-sm font-bold text-navy"
               >
-                {link.label}
+                <Download className="h-4 w-4" />
+                Resume
               </a>
-            ))}
+            ) : null}
           </div>
         </div>
       )}
