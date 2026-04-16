@@ -270,10 +270,12 @@ async function resolveProjectImageUrl(
     if (!publicUrl) throw new Error('Missing public URL for uploaded project image');
     return publicUrl;
   } catch (error) {
-    console.warn('[supabase] project image upload failed', error);
-    throw new Error(
-      'Project image upload failed. Check Supabase Storage bucket "project-images" and policies.'
+    console.warn(
+      '[supabase] project image upload failed; falling back to inline image (apply migration storage_project_images or fix Storage RLS)',
+      error
     );
+    // Same pattern as profile: when Storage RLS blocks upload, keep working with data URL in DB.
+    return dataUrl;
   }
 }
 

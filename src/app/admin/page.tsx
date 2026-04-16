@@ -407,6 +407,10 @@ function ExperienceManager() {
       setExperiences([...experiences, { ...formData, id: Date.now().toString() }]);
     }
 
+    showAdminAlert(
+      editingId ? 'Experience updated successfully.' : 'Experience saved successfully.',
+      'success'
+    );
     resetForm();
   };
 
@@ -820,6 +824,10 @@ function ProjectsManager() {
       setProjects([...projects, { ...payload, id: Date.now().toString() }]);
     }
 
+    showAdminAlert(
+      editingId ? 'Project updated successfully.' : 'Project saved successfully.',
+      'success'
+    );
     resetForm();
   };
 
@@ -1239,6 +1247,10 @@ function SkillsManager() {
       setSkills([...skills, { ...formData, id: Date.now().toString() }]);
     }
 
+    showAdminAlert(
+      editingId ? 'Skill updated successfully.' : 'Skill saved successfully.',
+      'success'
+    );
     resetForm();
   };
 
@@ -1497,6 +1509,10 @@ function ArticlesManager() {
       setArticles([...articles, { ...formData, id: Date.now().toString(), slug }]);
     }
 
+    showAdminAlert(
+      editingId ? 'Article updated successfully.' : 'Article saved successfully.',
+      'success'
+    );
     resetForm();
   };
 
@@ -1786,6 +1802,10 @@ function TestimonialsManager() {
       setTestimonials([...testimonials, { ...formData, id: Date.now().toString() }]);
     }
 
+    showAdminAlert(
+      editingId ? 'Testimonial updated successfully.' : 'Testimonial saved successfully.',
+      'success'
+    );
     resetForm();
   };
 
