@@ -117,7 +117,7 @@ export async function saveProjects(projects: any[]) {
       excerpt: p.excerpt,
       category: p.category,
       live_url: p.liveUrl,
-      github_url: p.githubUrl,
+      github_url: null,
       image_url: String(p.__resolvedPrimary ?? '').trim() || images[0] || '',
       image_urls: images,
       featured: p.featured ?? false,
@@ -129,27 +129,35 @@ export async function saveProjects(projects: any[]) {
     review_rating: Number(normalizedProjects[index]?.rating ?? 3.3),
   }));
 
-  // Only replace DB rows after all image uploads/normalization succeeded.
-  // This prevents wiping the table when Storage upload fails mid-save.
-  await supabase.from('projects').delete().neq('id', 0);
+  // Upsert row-by-row to avoid large payload failures when many data URLs are present.
+  // Only clean up removed rows if every incoming row has been persisted successfully.
+  const upsertProjectRow = async (row: Record<string, unknown>) => {
+    const attempt = await supabase.from('projects').upsert(row, { onConflict: 'id' });
+    if (!attempt.error) return;
+    const missingRating = isMissingReviewRatingColumn(attempt.error);
+    const missingImageUrls = isMissingImageUrlsColumn(attempt.error);
+    if (!missingRating && !missingImageUrls) throw attempt.error;
+    const fallbackRow = { ...row };
+    if (missingRating) delete fallbackRow.review_rating;
+    if (missingImageUrls) delete fallbackRow.image_urls;
+    const fallback = await supabase.from('projects').upsert(fallbackRow, { onConflict: 'id' });
+    if (fallback.error) throw fallback.error;
+  };
 
-  const withRating = await supabase.from('projects').insert(withRatingRows);
-  if (!withRating.error) return;
-  const missingRating = isMissingReviewRatingColumn(withRating.error);
-  const missingImageUrls = isMissingImageUrlsColumn(withRating.error);
-  if (!missingRating && !missingImageUrls) throw withRating.error;
+  for (const row of withRatingRows) {
+    await upsertProjectRow(row as Record<string, unknown>);
+  }
 
-  // Handle partial schema rollouts:
-  // - keep image_urls when available
-  // - keep review_rating when available
-  const fallbackRows = withRatingRows.map((row) => {
-    const next = { ...row } as Record<string, unknown>;
-    if (missingRating) delete next.review_rating;
-    if (missingImageUrls) delete next.image_urls;
-    return next;
-  });
-  const fallback = await supabase.from('projects').insert(fallbackRows);
-  if (fallback.error) throw fallback.error;
+  const { data: existingRows, error: existingError } = await supabase.from('projects').select('id');
+  if (existingError) throw existingError;
+  const incomingIds = new Set(withRatingRows.map((row) => String(row.id)));
+  const idsToDelete = (existingRows ?? [])
+    .map((row: { id: unknown }) => String(row.id))
+    .filter((id) => !incomingIds.has(id));
+  if (idsToDelete.length > 0) {
+    const deleteRemoved = await supabase.from('projects').delete().in('id', idsToDelete);
+    if (deleteRemoved.error) throw deleteRemoved.error;
+  }
 }
 
 // ── Blog Posts ─────────────────────────────────────────────────
@@ -235,7 +243,7 @@ async function resolveProfileImageUrl(profileImage: unknown): Promise<string | u
     const filePath = `profile/profile-${Date.now()}.${extension}`;
     const { error: uploadError } = await supabase.storage
       .from('profile-images')
-      .upload(filePath, bytes, { contentType, upsert: true });
+      .upload(filePath, bytes, { contentType });
     if (uploadError) throw uploadError;
 
     const { data } = supabase.storage.from('profile-images').getPublicUrl(filePath);
@@ -262,7 +270,7 @@ async function resolveProjectImageUrl(
     const filePath = `projects/${projectId}-${Date.now()}-${imageIndex}.${extension}`;
     const { error: uploadError } = await supabase.storage
       .from('project-images')
-      .upload(filePath, bytes, { contentType, upsert: true });
+      .upload(filePath, bytes, { contentType });
     if (uploadError) throw uploadError;
 
     const { data } = supabase.storage.from('project-images').getPublicUrl(filePath);
@@ -353,7 +361,6 @@ export async function fetchProjectsForAdmin(): Promise<Project[]> {
     excerpt: String(proj.excerpt ?? ''),
     category: String(proj.category ?? ''),
     liveUrl: String(proj.live_url ?? ''),
-    githubUrl: String(proj.github_url ?? ''),
     image: mergedImages[0] ?? '',
     images: mergedImages,
     featured: Boolean(proj.featured),

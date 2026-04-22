@@ -3,6 +3,7 @@
 import { motion } from "framer-motion";
 import { MapPin, Mail, Download } from "lucide-react";
 import { usePortfolioData } from "@/hooks/usePortfolioData";
+import SectionLoading from "@/components/portfolio/SectionLoading";
 
 const statVariants = {
   hidden: { opacity: 0, y: 20 },
@@ -20,7 +21,9 @@ export default function AboutSection() {
   if (isLoading) {
     return (
       <section id="about" className="bg-sky-50 py-16 dark:bg-transparent">
-        <div className="section-container py-12 text-center text-gray-500 dark:text-slate-portfolio">Loading…</div>
+        <div className="section-container py-12 text-center">
+          <SectionLoading />
+        </div>
       </section>
     );
   }

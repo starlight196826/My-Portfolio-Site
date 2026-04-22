@@ -107,11 +107,11 @@ export function usePortfolioData() {
         const withRating = await supabase
           .from('projects')
           .select(
-            'id, title, description, excerpt, category, live_url, github_url, image_url, image_urls, featured, tags, review_rating'
+            'id, title, description, excerpt, category, live_url, image_url, image_urls, featured, tags, review_rating'
           )
           .order('id');
         if (!isMissingReviewRatingColumn(withRating.error) && !isMissingImageUrlsColumn(withRating.error))
-          return withRating;
+          return { ...withRating, __missingReviewRating: false };
 
         const missingRating = isMissingReviewRatingColumn(withRating.error);
         const missingImageUrls = isMissingImageUrlsColumn(withRating.error);
@@ -122,7 +122,6 @@ export function usePortfolioData() {
           'excerpt',
           'category',
           'live_url',
-          'github_url',
           'image_url',
           missingImageUrls ? null : 'image_urls',
           'featured',
@@ -132,17 +131,18 @@ export function usePortfolioData() {
           .filter(Boolean)
           .join(', ');
         const fallback = await supabase.from('projects').select(fallbackColumns).order('id');
-        if (fallback.error) return fallback;
+        if (fallback.error) return { ...fallback, __missingReviewRating: missingRating };
         return {
           ...fallback,
           data: (fallback.data ?? []).map((proj: any) => ({ ...proj, review_rating: 3.3 })),
           error: null,
+          __missingReviewRating: missingRating,
         };
       };
 
       const [
         { data: experiences, error: expErr },
-        { data: projects, error: projErr },
+        { data: projects, error: projErr, __missingReviewRating: projectsMissingRating },
         { data: blogPosts, error: blogErr },
         { data: skillRows, error: skErr },
         { data: testimonialRows, error: teErr },
@@ -194,7 +194,6 @@ export function usePortfolioData() {
           excerpt: proj.excerpt,
           category: proj.category,
           liveUrl: proj.live_url,
-          githubUrl: proj.github_url,
           image: images[0] ?? '',
           images,
           featured: proj.featured,
@@ -204,6 +203,37 @@ export function usePortfolioData() {
             : (proj.tags || '').split(',').map((t: string) => t.trim()),
         };
       });
+      // Only use local rating fallback when Supabase schema truly lacks review_rating.
+      if (projectsMissingRating) {
+        try {
+          if (typeof window !== 'undefined') {
+            const savedProjects = window.localStorage.getItem('portfolio_projects');
+            if (savedProjects) {
+              const local = JSON.parse(savedProjects);
+              if (Array.isArray(local)) {
+                const ratingById = new Map<string, number>();
+                for (const proj of local) {
+                  if (!proj || typeof proj !== 'object') continue;
+                  const id = String((proj as any).id ?? '').trim();
+                  const rating = Number((proj as any).rating);
+                  if (id && Number.isFinite(rating)) {
+                    ratingById.set(id, rating);
+                  }
+                }
+                if (ratingById.size > 0) {
+                  mergedData.projects = mergedData.projects.map((proj) =>
+                    ratingById.has(proj.id)
+                      ? { ...proj, rating: ratingById.get(proj.id)! }
+                      : proj
+                  );
+                }
+              }
+            }
+          }
+        } catch {
+          // Ignore localStorage issues and keep Supabase rating defaults.
+        }
+      }
     }
     // If Supabase projects are empty (or temporarily unavailable), fallback to locally cached projects.
     if (mergedData.projects.length === 0) {

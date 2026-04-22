@@ -13,7 +13,6 @@ const navigationLinks = [
   { href: "#skills", label: "Skills" },
   { href: "#projects", label: "Projects" },
   { href: "#experience", label: "Experience" },
-  { href: "#blog", label: "Blog" },
   { href: "#testimonials", label: "Testimonials" },
   { href: "#contact", label: "Contact" },
 ];
@@ -27,7 +26,7 @@ export default function Navbar() {
   const { data } = usePortfolioData();
   const profile = data.profile;
   const brand = profile.name?.trim() || "Portfolio";
-  const resumeUrl = profile.resumeUrl?.trim();
+  const resumeUrl = profile.resumeUrl?.trim() || "/resume.pdf";
 
   useEffect(() => {
     setMounted(true);

@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import Link from "next/link";
 import { ArrowUp } from "lucide-react";
 import { usePortfolioData } from "@/hooks/usePortfolioData";
+import SectionLoading from "@/components/portfolio/SectionLoading";
 
 export default function Footer() {
   const { data, isLoading } = usePortfolioData();
@@ -36,8 +37,8 @@ export default function Footer() {
   if (isLoading) {
     return (
       <footer className="border-t border-sky-100 bg-sky-50 dark:border-navy-border dark:bg-navy">
-        <div className="section-container py-12 text-center text-sm text-gray-500 dark:text-slate-portfolio">
-          Loading…
+        <div className="section-container py-12 text-center">
+          <SectionLoading />
         </div>
       </footer>
     );

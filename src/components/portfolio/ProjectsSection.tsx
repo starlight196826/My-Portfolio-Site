@@ -3,19 +3,23 @@
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
-import { ExternalLink, Code2, X, Star } from "lucide-react";
+import { ExternalLink, X, Star } from "lucide-react";
 import { usePortfolioData } from "@/hooks/usePortfolioData";
+import SectionLoading from "@/components/portfolio/SectionLoading";
 
 export default function ProjectsSection() {
   const { data, isLoading } = usePortfolioData();
   const { projects } = data;
+  const featuredProjects = projects.filter((p) => p.featured);
   const categories = Array.from(new Set(projects.map((p) => p.category))).sort();
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
 
   const filteredProjects =
-    selectedCategory === "All" ? projects : projects.filter((p) => p.category === selectedCategory);
+    selectedCategory === "All"
+      ? featuredProjects
+      : projects.filter((p) => p.category === selectedCategory);
   const selectedProject = projects.find((p) => p.id === selectedProjectId) ?? null;
   const getProjectImages = (project: { image?: string; images?: string[] }) => {
     const fromArray = Array.isArray(project.images)
@@ -33,7 +37,9 @@ export default function ProjectsSection() {
   if (isLoading) {
     return (
       <section id="projects" className="bg-sky-50 py-16 dark:bg-transparent">
-        <div className="section-container py-12 text-center text-gray-500 dark:text-slate-portfolio">Loading…</div>
+        <div className="section-container py-12 text-center">
+          <SectionLoading />
+        </div>
       </section>
     );
   }
@@ -93,7 +99,7 @@ export default function ProjectsSection() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.1, duration: 0.5 }}
-                className="group relative h-full cursor-pointer overflow-hidden rounded-lg border border-sky-100 bg-sky-50/80 shadow-md transition-shadow hover:shadow-xl dark:border-navy-border dark:bg-navy-muted"
+                className="group relative flex h-full cursor-pointer flex-col overflow-hidden rounded-lg border border-sky-100 bg-sky-50/80 shadow-md transition-shadow hover:shadow-xl dark:border-navy-border dark:bg-navy-muted"
                 onClick={() => setSelectedProjectId(project.id)}
               >
                 {(() => {
@@ -125,8 +131,8 @@ export default function ProjectsSection() {
                 </div>
 
                 {/* Content */}
-                <div className="p-6">
-                  <h3 className="mb-2 text-lg font-bold text-gray-900 dark:text-slate-heading">
+                <div className="flex flex-1 flex-col p-6">
+                  <h3 className="mb-2 line-clamp-2 min-h-[3.5rem] text-lg font-bold text-gray-900 dark:text-slate-heading">
                     {project.title}
                   </h3>
                   <button
@@ -152,7 +158,7 @@ export default function ProjectsSection() {
                   </div>
 
                   {/* Links */}
-                  <div className="flex gap-3">
+                  <div className="mt-auto flex gap-3">
                     <a
                       href={project.liveUrl}
                       target="_blank"
@@ -162,16 +168,6 @@ export default function ProjectsSection() {
                     >
                       <ExternalLink size={16} />
                       Live Demo
-                    </a>
-                    <a
-                      href={project.githubUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      onClick={(e) => e.stopPropagation()}
-                      className="flex items-center gap-2 rounded-lg border border-gray-300 bg-gray-200 px-4 py-2 text-sm font-medium text-gray-900 transition-colors hover:bg-gray-300 dark:border-navy-border dark:bg-navy dark:text-slate-heading dark:hover:border-mint/40"
-                    >
-                      <Code2 size={16} />
-                      Code
                     </a>
                   </div>
                 </div>
@@ -297,15 +293,6 @@ export default function ProjectsSection() {
                     >
                       <ExternalLink size={16} />
                       Live Preview
-                    </a>
-                    <a
-                      href={selectedProject.githubUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-2 rounded-lg border border-sky-200 bg-sky-100 px-5 py-2.5 text-sm font-semibold text-gray-900 transition-colors hover:bg-sky-200 dark:border-navy-border dark:bg-navy dark:text-slate-heading dark:hover:border-mint/40"
-                    >
-                      <Code2 size={16} />
-                      View Code
                     </a>
                   </div>
                 </div>

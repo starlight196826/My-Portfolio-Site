@@ -626,6 +626,7 @@ function ProjectsManager() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
   const loaded = useRef(false);
   const skipNextPersist = useRef(false);
   const [formData, setFormData] = useState({
@@ -636,13 +637,14 @@ function ProjectsManager() {
     tags: '',
     category: '',
     liveUrl: '',
-    githubUrl: '',
     image: '',
     images: [] as string[],
     featured: false,
   });
   const [dragImageIndex, setDragImageIndex] = useState<number | null>(null);
+  const [isProjectDropActive, setIsProjectDropActive] = useState(false);
   const projectImagesInputRef = useRef<HTMLInputElement | null>(null);
+  const projectSyncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const PROJECT_IMAGE_CACHE_MAX_DATA_URL_CHARS = 1_200_000;
 
   const projectsForLocalStorage = (rows: any[]) =>
@@ -719,7 +721,6 @@ function ProjectsManager() {
     tags: '',
     category: '',
     liveUrl: '',
-    githubUrl: '',
     image: '',
     images: [] as string[],
     featured: false,
@@ -733,9 +734,7 @@ function ProjectsManager() {
     setShowForm(false);
   };
 
-  const handleProjectImageFiles = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const inputEl = e.currentTarget;
-    const files = Array.from(inputEl.files ?? []);
+  const importProjectImageFiles = async (files: File[]) => {
     if (!files.length) return;
 
     const MAX_FILE_BYTES = 8 * 1024 * 1024;
@@ -747,7 +746,6 @@ function ProjectsManager() {
         `Image "${oversized.name}" is too large (${actualMb}MB). Max allowed is ${limitMb}MB.`,
         'warning'
       );
-      inputEl.value = '';
       return;
     }
 
@@ -777,9 +775,25 @@ function ProjectsManager() {
       });
     } catch {
       showAdminAlert('Failed to import one or more images. Please try again.', 'error');
+    }
+  };
+
+  const handleProjectImageFiles = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const inputEl = e.currentTarget;
+    const files = Array.from(inputEl.files ?? []);
+    try {
+      await importProjectImageFiles(files);
     } finally {
       inputEl.value = '';
     }
+  };
+
+  const handleProjectImageDrop = async (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsProjectDropActive(false);
+    const files = Array.from(e.dataTransfer?.files ?? []);
+    await importProjectImageFiles(files);
   };
 
   const removeProjectImage = (index: number) => {
@@ -800,7 +814,8 @@ function ProjectsManager() {
     });
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
+    if (isSaving) return;
     if (!formData.title || !formData.description) {
       showAdminAlert('Please fill in title and description', 'warning');
       return;
@@ -816,19 +831,27 @@ function ProjectsManager() {
       rating: normalizedRating,
     };
 
-    if (editingId) {
-      setProjects(
-        projects.map((p: { id: string }) => (p.id === editingId ? { ...payload, id: editingId } : p))
-      );
-    } else {
-      setProjects([...projects, { ...payload, id: Date.now().toString() }]);
-    }
+    const nextProjects = editingId
+      ? projects.map((p: { id: string }) => (p.id === editingId ? { ...payload, id: editingId } : p))
+      : [...projects, { ...payload, id: Date.now().toString() }];
 
-    showAdminAlert(
-      editingId ? 'Project updated successfully.' : 'Project saved successfully.',
-      'success'
-    );
-    resetForm();
+    setIsSaving(true);
+    try {
+      if (isSupabaseConfigured) {
+        await saveProjects(nextProjects);
+      }
+      setProjects(nextProjects);
+      showAdminAlert(
+        editingId ? 'Project updated successfully.' : 'Project saved successfully.',
+        'success'
+      );
+      resetForm();
+    } catch (e) {
+      warnSupabaseSync('Save project', e);
+      showAdminAlert('Project save failed. Please try again.', 'error');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   useEffect(() => {
@@ -863,8 +886,22 @@ function ProjectsManager() {
         console.warn('[admin] localStorage quota exceeded; projects cache reduced');
       }
     }
-    if (isSupabaseConfigured)
-      saveProjects(projects).catch((e) => warnSupabaseSync('Sync projects', e));
+    if (projectSyncTimerRef.current) {
+      clearTimeout(projectSyncTimerRef.current);
+      projectSyncTimerRef.current = null;
+    }
+    if (isSupabaseConfigured) {
+      // Debounce and coalesce syncs so older saves cannot race and overwrite newer edits.
+      projectSyncTimerRef.current = setTimeout(() => {
+        saveProjects(projects).catch((e) => warnSupabaseSync('Sync projects', e));
+      }, 450);
+    }
+    return () => {
+      if (projectSyncTimerRef.current) {
+        clearTimeout(projectSyncTimerRef.current);
+        projectSyncTimerRef.current = null;
+      }
+    };
   }, [projects]);
 
   const formOpen = showForm || editingId !== null;
@@ -970,28 +1007,49 @@ function ProjectsManager() {
               className="w-full rounded-lg border border-gray-300 px-4 py-2 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
             />
           </div>
-          <div>
-            <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">GitHub URL</label>
-            <input
-              type="url"
-              placeholder="GitHub URL"
-              value={formData.githubUrl}
-              onChange={(e) => setFormData({ ...formData, githubUrl: e.target.value })}
-              className="w-full rounded-lg border border-gray-300 px-4 py-2 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
-            />
-          </div>
           <div className="col-span-1 md:col-span-2">
             <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
               Project Images (import files, then drag to reorder)
             </label>
-            <div className="mb-3 flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => projectImagesInputRef.current?.click()}
-                className="rounded-lg bg-teal-600 px-3 py-2 text-sm font-medium text-white hover:bg-teal-700"
-              >
-                Import image files
-              </button>
+            <div
+              onDragOver={(e) => {
+                e.preventDefault();
+                e.dataTransfer.dropEffect = 'copy';
+              }}
+              onDragEnter={(e) => {
+                e.preventDefault();
+                setIsProjectDropActive(true);
+              }}
+              onDragLeave={(e) => {
+                e.preventDefault();
+                if (!e.currentTarget.contains(e.relatedTarget as Node | null)) {
+                  setIsProjectDropActive(false);
+                }
+              }}
+              onDrop={handleProjectImageDrop}
+              className={`mb-3 rounded-lg border-2 border-dashed p-4 transition ${
+                isProjectDropActive
+                  ? 'border-teal-500 bg-teal-50 dark:border-mint dark:bg-mint/10'
+                  : 'border-gray-300 bg-white dark:border-gray-600 dark:bg-gray-800/60'
+              }`}
+            >
+              <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-700 dark:text-gray-200">
+                    Drag and drop images here
+                  </p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    JPG, PNG, WebP, GIF up to 8MB each
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => projectImagesInputRef.current?.click()}
+                  className="rounded-lg bg-teal-600 px-3 py-2 text-sm font-medium text-white hover:bg-teal-700"
+                >
+                  Browse files
+                </button>
+              </div>
               <input
                 ref={projectImagesInputRef}
                 type="file"
@@ -1000,9 +1058,6 @@ function ProjectsManager() {
                 onChange={handleProjectImageFiles}
                 className="hidden"
               />
-              <span className="text-xs text-gray-500 dark:text-gray-400">
-                JPG, PNG, WebP, GIF up to 8MB each
-              </span>
             </div>
             {formData.images.length > 0 ? (
               <div className="space-y-2">
@@ -1077,15 +1132,17 @@ function ProjectsManager() {
           <button
             type="button"
             onClick={handleSave}
-            className="flex items-center gap-2 rounded-lg bg-teal-600 px-4 py-2 font-medium text-white hover:bg-teal-700"
+            disabled={isSaving}
+            className="flex items-center gap-2 rounded-lg bg-teal-600 px-4 py-2 font-medium text-white hover:bg-teal-700 disabled:cursor-not-allowed disabled:opacity-60"
           >
             <Save size={18} />
-            {editingId ? 'Update' : 'Save'} project
+            {isSaving ? 'Saving...' : `${editingId ? 'Update' : 'Save'} project`}
           </button>
           <button
             type="button"
             onClick={resetForm}
-            className="rounded-lg bg-gray-200 px-4 py-2 font-medium text-gray-900 hover:bg-gray-300 dark:bg-gray-700 dark:text-white dark:hover:bg-gray-600"
+            disabled={isSaving}
+            className="rounded-lg bg-gray-200 px-4 py-2 font-medium text-gray-900 hover:bg-gray-300 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-gray-700 dark:text-white dark:hover:bg-gray-600"
           >
             Cancel
           </button>
@@ -1184,6 +1241,19 @@ function ProjectsManager() {
 
 // Skills Manager Component
 function SkillsManager() {
+  const SKILL_CATEGORY_SUGGESTIONS = [
+    'Web Development & No-Code Builders',
+    'Mobile Development',
+    'UI/UX Design',
+    'Backend & Database',
+    'AI Development & Automation',
+    'Voice AI & Conversational AI',
+    'CRM & Marketing Automation',
+    'SaaS & Software Development',
+    'Integrations & Tools',
+    'SEO & Content',
+    'Deployment & Infrastructure',
+  ];
   const [skills, setSkills] = useState([]);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
@@ -1192,9 +1262,14 @@ function SkillsManager() {
   const skipNextPersist = useRef(false);
   const [formData, setFormData] = useState({
     name: '',
-    category: 'Frontend',
+    category: SKILL_CATEGORY_SUGGESTIONS[0],
     proficiency: 80,
   });
+  const categoryOptions = Array.from(
+    new Set(
+      [...SKILL_CATEGORY_SUGGESTIONS, ...skills.map((s: any) => String(s.category ?? '').trim())].filter(Boolean)
+    )
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -1228,7 +1303,7 @@ function SkillsManager() {
   }, []);
 
   const resetForm = () => {
-    setFormData({ name: '', category: 'Frontend', proficiency: 80 });
+    setFormData({ name: '', category: SKILL_CATEGORY_SUGGESTIONS[0], proficiency: 80 });
     setEditingId(null);
     setShowForm(false);
   };
@@ -1279,7 +1354,7 @@ function SkillsManager() {
           type="button"
           onClick={() => {
             setEditingId(null);
-            setFormData({ name: '', category: 'Frontend', proficiency: 80 });
+            setFormData({ name: '', category: SKILL_CATEGORY_SUGGESTIONS[0], proficiency: 80 });
             setShowForm(true);
           }}
           className="inline-flex items-center gap-2 rounded-lg bg-teal-600 px-4 py-2 text-sm font-medium text-white hover:bg-teal-700"
@@ -1308,15 +1383,19 @@ function SkillsManager() {
           </div>
           <div>
             <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Category</label>
-            <select
+            <input
+              type="text"
+              list="skills-category-options"
               value={formData.category}
               onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+              placeholder="Skill category"
               className="w-full rounded-lg border border-gray-300 px-4 py-2 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
-            >
-              <option>Frontend</option>
-              <option>Backend</option>
-              <option>Tools</option>
-            </select>
+            />
+            <datalist id="skills-category-options">
+              {categoryOptions.map((cat) => (
+                <option key={cat} value={cat} />
+              ))}
+            </datalist>
           </div>
           <div className="col-span-1 md:col-span-2">
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -1353,9 +1432,9 @@ function SkillsManager() {
       </AdminEditModal>
       )}
 
-      {['Frontend', 'Backend', 'Tools'].map((cat) => (
+      {categoryOptions.map((cat) => (
         <div key={cat}>
-          <h3 className="mb-3 text-lg font-bold text-gray-900 dark:text-white">{cat} Skills</h3>
+          <h3 className="mb-3 text-lg font-bold text-gray-900 dark:text-white">{cat}</h3>
           <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
             {skills
               .filter((s: any) => s.category === cat)
@@ -2019,6 +2098,7 @@ function ProfileManager() {
   const [photoWarning, setPhotoWarning] = useState('');
   const [photoUploadRejected, setPhotoUploadRejected] = useState(false);
   const [showProfileEditor, setShowProfileEditor] = useState(false);
+  const [isProfileDropActive, setIsProfileDropActive] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -2147,8 +2227,7 @@ function ProfileManager() {
     setShowProfileEditor(false);
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
+  const importProfilePhoto = (file: File | undefined) => {
     if (!file) return;
     if (file.size > PROFILE_IMAGE_UPLOAD_MAX_BYTES) {
       const limitMb = (PROFILE_IMAGE_UPLOAD_MAX_BYTES / (1024 * 1024)).toFixed(0);
@@ -2158,7 +2237,6 @@ function ProfileManager() {
       setPhotoUploadRejected(true);
       // Immediate rejection: clear selected file and preview.
       setProfile(prev => ({ ...prev, profileImage: '' }));
-      e.currentTarget.value = '';
       showAdminAlert(message, 'warning');
       return;
     }
@@ -2167,6 +2245,21 @@ function ProfileManager() {
     const reader = new FileReader();
     reader.onload = () => setProfile(prev => ({ ...prev, profileImage: reader.result as string }));
     reader.readAsDataURL(file);
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const inputEl = e.currentTarget;
+    const file = inputEl.files?.[0];
+    importProfilePhoto(file);
+    inputEl.value = '';
+  };
+
+  const handleProfilePhotoDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsProfileDropActive(false);
+    const file = e.dataTransfer?.files?.[0];
+    importProfilePhoto(file);
   };
 
   const currentPhoto = profile.profileImage || '';
@@ -2252,15 +2345,41 @@ function ProfileManager() {
                 </button>
               </div>
               {photoMode === 'upload' ? (
-                <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-gray-300 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700">
-                  <span>Choose photo…</span>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleFileChange}
-                    className="hidden"
-                  />
-                </label>
+                <div
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                    e.dataTransfer.dropEffect = 'copy';
+                  }}
+                  onDragEnter={(e) => {
+                    e.preventDefault();
+                    setIsProfileDropActive(true);
+                  }}
+                  onDragLeave={(e) => {
+                    e.preventDefault();
+                    if (!e.currentTarget.contains(e.relatedTarget as Node | null)) {
+                      setIsProfileDropActive(false);
+                    }
+                  }}
+                  onDrop={handleProfilePhotoDrop}
+                  className={`rounded-lg border-2 border-dashed p-3 transition ${
+                    isProfileDropActive
+                      ? 'border-teal-500 bg-teal-50 dark:border-mint dark:bg-mint/10'
+                      : 'border-gray-300 bg-white dark:border-gray-600 dark:bg-gray-800/60'
+                  }`}
+                >
+                  <label className="flex cursor-pointer items-center justify-between gap-2 text-sm text-gray-700 dark:text-gray-300">
+                    <span>Drag and drop a photo here, or browse</span>
+                    <span className="rounded-md bg-teal-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-teal-700">
+                      Browse
+                    </span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleFileChange}
+                      className="hidden"
+                    />
+                  </label>
+                </div>
               ) : (
                 <input
                   type="url"

@@ -5,6 +5,7 @@ import { motion, useReducedMotion } from "framer-motion";
 import Image from "next/image";
 import { Code2, Share2, ArrowDown, ExternalLink } from "lucide-react";
 import { usePortfolioData } from "@/hooks/usePortfolioData";
+import SectionLoading from "@/components/portfolio/SectionLoading";
 
 function sleep(ms: number) {
   return new Promise<void>((resolve) => setTimeout(resolve, ms));
@@ -104,7 +105,9 @@ export default function HeroSection() {
               "radial-gradient(ellipse 80% 80% at 50% -20%, #1A2942 0%, #0A192F 55%, #0A192F 100%)",
           }}
         />
-        <p className="relative z-10 text-gray-500 dark:text-slate-portfolio">Loading…</p>
+        <div className="relative z-10">
+          <SectionLoading />
+        </div>
       </section>
     );
   }

@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import { Mail, Phone, MapPin, CheckCircle, Send } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { usePortfolioData } from "@/hooks/usePortfolioData";
+import SectionLoading from "@/components/portfolio/SectionLoading";
 
 interface ContactFormData {
   name: string;
@@ -50,8 +51,8 @@ export default function ContactSection() {
   if (isLoading) {
     return (
       <section id="contact" className="bg-sky-50 py-16 dark:bg-transparent">
-        <div className="section-container py-12 text-center text-gray-500 dark:text-slate-portfolio">
-          Loading…
+        <div className="section-container py-12 text-center">
+          <SectionLoading />
         </div>
       </section>
     );

@@ -6,6 +6,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { Search, X } from "lucide-react";
 import { usePortfolioData } from "@/hooks/usePortfolioData";
+import SectionLoading from "@/components/portfolio/SectionLoading";
 
 export default function BlogSection() {
   const { data, isLoading } = usePortfolioData();
@@ -40,8 +41,8 @@ export default function BlogSection() {
   if (isLoading) {
     return (
       <section id="blog" className="bg-sky-50 py-16 dark:bg-transparent">
-        <div className="section-container py-12 text-center text-gray-500 dark:text-slate-portfolio">
-          Loading…
+        <div className="section-container py-12 text-center">
+          <SectionLoading />
         </div>
       </section>
     );

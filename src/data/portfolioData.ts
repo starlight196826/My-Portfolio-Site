@@ -24,7 +24,7 @@ export interface Skill {
   id: string;
   name: string;
   proficiency: number;
-  category: 'Frontend' | 'Backend' | 'Tools';
+  category: string;
 }
 
 export interface Project {
@@ -36,7 +36,6 @@ export interface Project {
   tags: string[];
   category: string;
   liveUrl: string;
-  githubUrl: string;
   image: string;
   images?: string[];
   featured?: boolean;
