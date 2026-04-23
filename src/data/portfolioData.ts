@@ -36,6 +36,7 @@ export interface Project {
   tags: string[];
   category: string;
   liveUrl: string;
+  githubUrl?: string;
   image: string;
   images?: string[];
   featured?: boolean;
