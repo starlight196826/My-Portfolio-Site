@@ -29,7 +29,7 @@ insert into public.profile (
   title, hero_roles, profile_image_url, resume_url, social_links
 ) values (
   1,
-  $v$Thong Xuan Anh Trinh$v$,
+  $v$Kenny Gorczany$v$,
   $v$Passionate about building beautiful, performant web applications that solve real-world problems. With 6+ years of experience in full-stack development, I specialize in creating seamless digital experiences using cutting-edge technologies.$v$,
   $v$starlight196826@gmail.com$v$,
   $v$Ban Tang Village, Tien Phong Commune, Que Phong District, Nghe An Province, Vietnam$v$,

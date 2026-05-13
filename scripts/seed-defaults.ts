@@ -8,7 +8,7 @@ import type {
 } from '../src/data/portfolioData';
 
 const profile: Profile = {
-  name: 'Thong Xuan Anh Trinh',
+  name: 'Kenny Gorczany',
   title: 'Full Stack Developer',
   heroRoles: [
     'Full Stack Developer',
